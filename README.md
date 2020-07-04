@@ -1,7 +1,7 @@
 SMPL-X and CAPE C++ implementation in Eigen and CUDA.
 
 ## Dependencies
-- C++ 11
+- C++ 14
 - Eigen 3 (I have 3.3.7) http://eigen.tuxfamily.org/
 - CUDA (I have 11)
 - Open3D: optional, needed for 3D viewer

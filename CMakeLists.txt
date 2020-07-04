@@ -6,6 +6,9 @@ endif()
 if (POLICY CMP0048)
     cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
+if (POLICY CMP0072)
+    cmake_policy(SET CMP0072 NEW)
+endif (POLICY CMP0072)
 
 
 project( smpl_cpp )
@@ -22,22 +25,11 @@ set( ZLIB_DIR "${VENDOR_DIR}/zlib" )
 set( EIGEN_DIR "${VENDOR_DIR}/eigen" )
 
 set( CMAKE_CXX_STACK_SIZE "10000000" )
-set( CMAKE_CXX_STANDARD 11 )
+set( CMAKE_CXX_STANDARD 14 )
+set( CMAKE_CXX_STANDARD_REQUIRED ON)
 set( CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake_modules" )
 
 set( PROJ_NAME "smpl_cpp" )
-
-include( CheckCXXCompilerFlag )
-CHECK_CXX_COMPILER_FLAG( "-std=c++11" COMPILER_SUPPORTS_CXX11 )
-CHECK_CXX_COMPILER_FLAG( "-std=c++0x" COMPILER_SUPPORTS_CXX0X )
-
-if( COMPILER_SUPPORTS_CXX11 )
-    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
-elseif( COMPILER_SUPPORTS_CXX0X )
-    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
-else()
-    message( STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler." )
-endif()
 
 if ( CMAKE_COMPILER_IS_GNUCXX OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang") )
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wno-deprecated-declarations -O3 -funroll-loops -g" )
@@ -77,8 +69,6 @@ SET(GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW docs" FORCE)
 SET(GLFW_INSTALL OFF CACHE BOOL "GLFW install" FORCE)
 add_subdirectory(${GLFW_DIR})
 
-find_package(CUDA REQUIRED)
-
 include_directories(
     ${INCLUDE_DIR}
     ${CNPY_DIR}
@@ -89,10 +79,37 @@ include_directories(
     ${CUDA_INCLUDE_DIRS}
 )
 
+# glew library
+add_library(glew STATIC
+    ${GLEW_DIR}/src/glew.c
+    ${GLEW_DIR}/include
+)
+target_link_libraries(glew ${GLFW_LIBRARIES})
+set_target_properties(glew
+    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/3rdparty/glew")
+
+# OpenGL
+find_package(OpenGL REQUIRED)
+
 set(
     DEPENDENCIES
+    OpenGL::GL
     glfw
+    ${GLFW_LIBRARIES}
+    glew
 )
+
+# OpenMP
+find_package(OpenMP QUIET)
+if (OPENMP_FOUND)
+    message(STATUS "Using OpenMP for parallelization")
+    set( DEPENDENCIES ${DEPENDENCIES} OpenMP::OpenMP_CXX )
+else()
+    message(STATUS "OpenMP not found, CPU performance may suffer")
+endif()
+
+# CUDA
+find_package(CUDA QUIET)
 
 find_package(ZLIB QUIET)
 if (ZLIB_FOUND)
@@ -115,7 +132,7 @@ file(GLOB SOURCES ${SRC_DIR}/*.cpp)
 file(GLOB HEADERS ${INCLUDE_DIR}/*.cpp)
 
 add_library( ${PROJ_NAME} ${SOURCES} ${VENDOR_SOURCES} )
-set_target_properties( ${PROJ_NAME} PROPERTIES OUTPUT_NAME ${PROJ_NAME} )
+set_target_properties( ${PROJ_NAME} PROPERTIES OUTPUT_NAME "smplxpp" )
 target_link_libraries( ${PROJ_NAME} ${DEPENDENCIES} )
 
 add_executable( demo demo.cpp )
@@ -145,6 +162,8 @@ elseif(UNIX)
     add_compile_options(-Wno-deprecated-declarations)
     add_compile_options(-Wno-unused-result)
 endif(WIN32)
+
+add_definitions( -DGLEW_STATIC)
 
 source_group( "Header Files" FILES ${HEADERS} )
 source_group( "Source Files" FILES ${SOURCES} )
