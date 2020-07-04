@@ -23,9 +23,9 @@ int32_t main(int argc, char** argv) {
     Body body(model);
     body.update();
 
-    body.save_obj("test.obj");
-    // Viewer viewer;
-    // viewer.spin();
+    // body.save_obj("test.obj");
+    Viewer viewer;
+    viewer.spin();
 
     return 0;
 }

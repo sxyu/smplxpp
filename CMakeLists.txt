@@ -20,7 +20,7 @@ set( VENDOR_DIR "${PROJECT_SOURCE_DIR}/3rdparty" )
 set( CNPY_DIR "${VENDOR_DIR}/cnpy" )
 set( GLFW_DIR "${VENDOR_DIR}/glfw" )
 set( GLEW_DIR "${VENDOR_DIR}/glew" )
-set( GLM_DIR "${VENDOR_DIR}/glm" )
+# set( GLM_DIR "${VENDOR_DIR}/glm" )
 set( ZLIB_DIR "${VENDOR_DIR}/zlib" )
 set( EIGEN_DIR "${VENDOR_DIR}/eigen" )
 
@@ -73,7 +73,7 @@ include_directories(
     ${INCLUDE_DIR}
     ${CNPY_DIR}
     ${EIGEN_DIR}
-    ${GLM_DIR}
+    # ${GLM_DIR}
     ${GLEW_DIR}/include
     ${GLFW_DIR}/include
     ${CUDA_INCLUDE_DIRS}
