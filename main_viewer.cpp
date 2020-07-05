@@ -42,6 +42,8 @@ int main(int argc, char** argv) {
 
     viewer.on_gui = [&]() {
         // * GUI code
+        ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(300, 350), ImGuiCond_Once);
         ImGui::Begin("Model Parameters", NULL);
         if(ImGui::SliderFloat3("position", body.trans().data(), -5.f, 5.f)) update();
         if (ImGui::TreeNode("Pose")) {
@@ -85,9 +87,33 @@ int main(int argc, char** argv) {
         }
         ImGui::End(); // Model Parameters
 
+        ImGui::SetNextWindowPos(ImVec2(10, 370), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(300, 100), ImGuiCond_Once);
         ImGui::Begin("Camera", NULL);
-        // static Eigen::Vector3f camera_center = viewer.camera.set_center;
-        // if(ImGui::SliderFloat("dist_to_cen", viewer.camera.center, 0.01f, 5.f)) update();
+
+        if (ImGui::Button("Reset view")) {
+            viewer.camera.reset_view();
+        }
+
+        if (ImGui::TreeNode("View")) {
+            if(ImGui::SliderFloat3("cor##CORSLIDER", viewer.camera.center_of_rot.data(), -5.f, 5.f))
+                viewer.camera.update_view();
+            if(ImGui::SliderFloat("radius", &viewer.camera.dist_to_center, 0.01f, 5.f))
+                viewer.camera.update_view();
+            if(ImGui::DragFloat("yaw", &viewer.camera.yaw)) viewer.camera.update_view();
+            if(ImGui::DragFloat("pitch", &viewer.camera.pitch)) viewer.camera.update_view();
+            if(ImGui::DragFloat("roll", &viewer.camera.roll)) viewer.camera.update_view();
+            if(ImGui::SliderFloat3("world_up", viewer.camera.world_up.data(), -5.f, 5.f))
+                viewer.camera.update_view();
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("Projection")) {
+            if(ImGui::DragFloat("fovy", &viewer.camera.fovy)) viewer.camera.update_proj();
+            if(ImGui::DragFloat("z_close", &viewer.camera.z_close)) viewer.camera.update_proj();
+            if(ImGui::DragFloat("z_far", &viewer.camera.z_far)) viewer.camera.update_proj();
+            ImGui::TreePop();
+        }
 
         ImGui::End(); // Model Parameters
     };
