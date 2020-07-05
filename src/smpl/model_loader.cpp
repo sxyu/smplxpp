@@ -1,11 +1,11 @@
-#include "smpl.hpp"
+#include "smpl/smpl.hpp"
 
 #include <cnpy.h>
 #include <cstring>
 #include <algorithm>
 #include <fstream>
 
-#include "util.hpp"
+#include "smpl/util.hpp"
 
 #undef _SMPL_BEGIN_PROFILE
 #undef _SMPL_PROFILE
@@ -41,12 +41,19 @@ inline void load_kintree(const cnpy::NpyArray& kintree_raw, size_t& n_joints,
     }
 }
 
+// Matrix load helper; currently copies on return
+// can modify cnpy to load into the Eigen matrix; not important for now
 template<class InputScalar>
 inline Matrix load_matrix(const cnpy::NpyArray& raw, size_t r, size_t c) {
-    // Currently copies
-    return Eigen::template Map<const Eigen::Matrix<InputScalar,
-           Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > (raw.data<InputScalar>(), r, c)
-               .template cast<Scalar>();
+    if (raw.fortran_order) {
+        return Eigen::template Map<const Eigen::Matrix<InputScalar,
+               Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > (raw.data<InputScalar>(), r, c)
+                   .template cast<Scalar>();
+    } else {
+        return Eigen::template Map<const Eigen::Matrix<InputScalar,
+               Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > (raw.data<InputScalar>(), r, c)
+                   .template cast<Scalar>();
+    }
 }
 
 void assert_valid_scalar_word_sz(size_t sz) {
@@ -118,10 +125,11 @@ Model::Model(const std::string& path, const std::string& uv_path, size_t max_n_h
         assert_valid_scalar_word_sz(jreg_raw.word_size);
         joint_reg.resize(n_joints, n_verts);
         if (jreg_raw.word_size == 8) {
-            joint_reg = load_matrix<double>(jreg_raw, n_joints, n_verts).cast<Scalar>().sparseView();
+            joint_reg = load_matrix<double>(jreg_raw, n_joints, n_verts).sparseView();
         } else {
-            joint_reg = load_matrix<float>(jreg_raw, n_joints, n_verts).cast<Scalar>().sparseView();
+            joint_reg = load_matrix<float>(jreg_raw, n_joints, n_verts).sparseView();
         }
+        joints = joint_reg * verts;
     }
     _SMPL_PROFILE(jreg);
 
@@ -135,9 +143,9 @@ Model::Model(const std::string& path, const std::string& uv_path, size_t max_n_h
         assert_valid_scalar_word_sz(wt_raw.word_size);
         weights.resize(n_verts, n_joints);
         if (wt_raw.word_size == 8) {
-            weights = load_matrix<double>(wt_raw, n_verts, n_joints).cast<Scalar>().sparseView();
+            weights = load_matrix<double>(wt_raw, n_verts, n_joints).sparseView();
         } else {
-            weights = load_matrix<float>(wt_raw, n_verts, n_joints).cast<Scalar>().sparseView();
+            weights = load_matrix<float>(wt_raw, n_verts, n_joints).sparseView();
             Eigen::MatrixXf tmp = load_matrix<float>(wt_raw, n_verts, n_joints);
         }
     }

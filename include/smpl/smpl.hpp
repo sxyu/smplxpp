@@ -7,20 +7,20 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
+#include "meshview/common.hpp"
+
 #define _SMPL_MEMBER_ACCESSOR(name, body) inline auto name() {return body;} \
         inline auto name() const {return body;}
 
 namespace smpl {
-
-using Scalar = float;
-using MeshIndex = uint32_t;
-
-using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-using MatrixColMajor = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
-using Vector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
-using PointCloud = Eigen::Matrix<Scalar, Eigen::Dynamic, 3, Eigen::RowMajor>;
-using PointCloud2D = Eigen::Matrix<Scalar, Eigen::Dynamic, 2, Eigen::RowMajor>;
-using Triangles = Eigen::Matrix<MeshIndex, Eigen::Dynamic, 3, Eigen::RowMajor>;
+using meshview::Scalar;
+using meshview::MeshIndex;
+using meshview::PointCloud;
+using meshview::PointCloud2D;
+using meshview::Triangles;
+using meshview::Vector;
+using meshview::Matrix;
+using meshview::MatrixColMajor;
 
 using SparseMatrixColMajor = Eigen::SparseMatrix<Scalar>;
 using SparseMatrix = Eigen::SparseMatrix<Scalar, Eigen::RowMajor>;
@@ -160,7 +160,10 @@ public:
     // Deformed vertices
     PointCloud verts;
 
-    // Deformed joints
+    // Deformed joints (only shape applied)
+    PointCloud joints_shaped;
+
+    // Deformed joints (shape and pose applied)
     PointCloud joints;
 };
 

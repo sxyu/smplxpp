@@ -1,11 +1,18 @@
 SMPL-X and CAPE C++ implementation in Eigen and CUDA.
 
 ## Dependencies
-- C++ 14
-- Eigen 3 (I have 3.3.7) http://eigen.tuxfamily.org/
-- CUDA (I have 11)
-- Open3D: optional, needed for 3D viewer
+- Compiler supporting C++ 14
+- OpenGL 3+
 
-### 3rd party libraries in repo
+### Optional Dependencies
+- CUDA (I have 11)
+- OpenMP for CPU parallelization (currently not actually used)
+
+### Vendored 3rd party libraries
 The following dependencies are included in the repo and don't need to be installed
-- CNPY (for npy/npz IO) https://github.com/rogersce/cnpy
+- cnpy (for npy/npz I/O) https://github.com/rogersce/cnpy
+    - zlib: needed by cnpy to read npz (uses system zlib if available)
+- glew 2
+- glfw 3.3
+- Eigen 3 (I have 3.3.7) http://eigen.tuxfamily.org/
+    (uses system zlib if available, unless CMake option USE_SYSTEM_EIGEN=OFF)

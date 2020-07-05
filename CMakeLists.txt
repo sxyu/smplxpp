@@ -13,11 +13,13 @@ endif (POLICY CMP0072)
 
 project( smpl_cpp )
 option( USE_FFAST_MATH "Enable ffast-math compiler flag, may cause numerical problems" ON )
+option( USE_SYSTEM_EIGEN "Use system Eigen rather than the included Eigen submodule if available" ON )
 
 set( INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include" )
 set( SRC_DIR "${PROJECT_SOURCE_DIR}/src" )
 set( VENDOR_DIR "${PROJECT_SOURCE_DIR}/3rdparty" )
 set( CNPY_DIR "${VENDOR_DIR}/cnpy" )
+set( STB_DIR "${VENDOR_DIR}/stb" )
 set( GLFW_DIR "${VENDOR_DIR}/glfw" )
 set( GLEW_DIR "${VENDOR_DIR}/glew" )
 # set( GLM_DIR "${VENDOR_DIR}/glm" )
@@ -72,8 +74,7 @@ add_subdirectory(${GLFW_DIR})
 include_directories(
     ${INCLUDE_DIR}
     ${CNPY_DIR}
-    ${EIGEN_DIR}
-    # ${GLM_DIR}
+    ${STB_DIR}
     ${GLEW_DIR}/include
     ${GLFW_DIR}/include
     ${CUDA_INCLUDE_DIRS}
@@ -99,6 +100,33 @@ set(
     glew
 )
 
+# Eigen
+if ( USE_SYSTEM_EIGEN )
+    find_package(Eigen3 QUIET NO_MODULE)
+    if (TARGET Eigen3::Eigen)
+        message(STATUS "Using system Eigen")
+        set (DEPENDENCIES ${DEPENDENCIES} Eigen3::Eigen)
+    else()
+        message(STATUS "System Eigen not found, using vendor Eigen")
+        include_directories(${EIGEN_DIR})
+    endif()
+else()
+    message(STATUS "Using vendor Eigen")
+    include_directories(${EIGEN_DIR})
+endif()
+
+# Zlib
+find_package(ZLIB QUIET)
+if (ZLIB_FOUND)
+    message( STATUS "Using system zlib" )
+    set( DEPENDENCIES ${DEPENDENCIES} ZLIB::ZLIB )
+else()
+    message( STATUS "Using included zlib." )
+    add_subdirectory(${ZLIB_DIR})
+    include_directories(${ZLIB_DIR}/include)
+    set( DEPENDENCIES ${DEPENDENCIES} zlibstatic )
+endif()
+
 # OpenMP
 find_package(OpenMP QUIET)
 if (OPENMP_FOUND)
@@ -111,25 +139,15 @@ endif()
 # CUDA
 find_package(CUDA QUIET)
 
-find_package(ZLIB QUIET)
-if (ZLIB_FOUND)
-    message( STATUS "Using system zlib." )
-    set( DEPENDENCIES ${DEPENDENCIES} ZLIB::ZLIB )
-else()
-    message( STATUS "Using included zlib." )
-    add_subdirectory(${ZLIB_DIR})
-    include_directories(${ZLIB_DIR}/include)
-    set( DEPENDENCIES ${DEPENDENCIES} zlibstatic )
-endif()
-
 set(
     VENDOR_SOURCES
     ${GLEW_DIR}/src/glew.c
     ${CNPY_DIR}/cnpy.cpp
+    ${STB_DIR}/stb_image.cpp
 )
 
-file(GLOB SOURCES ${SRC_DIR}/*.cpp)
-file(GLOB HEADERS ${INCLUDE_DIR}/*.cpp)
+file(GLOB_RECURSE SOURCES ${SRC_DIR}/*.cpp)
+file(GLOB_RECURSE HEADERS ${INCLUDE_DIR}/*.cpp)
 
 add_library( ${PROJ_NAME} ${SOURCES} ${VENDOR_SOURCES} )
 set_target_properties( ${PROJ_NAME} PROPERTIES OUTPUT_NAME "smplxpp" )
@@ -163,7 +181,7 @@ elseif(UNIX)
     add_compile_options(-Wno-unused-result)
 endif(WIN32)
 
-add_definitions( -DGLEW_STATIC)
+add_definitions( -DGLEW_STATIC )
 
 source_group( "Header Files" FILES ${HEADERS} )
 source_group( "Source Files" FILES ${SOURCES} )

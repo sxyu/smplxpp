@@ -1,9 +1,10 @@
-#include "smpl.hpp"
+#include "smpl/smpl.hpp"
 
-#include "util.hpp"
+#include "smpl/util.hpp"
 
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 
 namespace smpl {
 
@@ -13,6 +14,7 @@ Body::Body(const Model& model, bool set_zero) : model(model), data(model.n_param
 
 void Body::set_zero() { data.setZero(); }
 
+// Main LBS routine
 void Body::update(bool enable_pose_blendshapes) {
     // _SMPL_BEGIN_PROFILE;
     // Will store full pose params (angle-axis), including hand
@@ -34,9 +36,11 @@ void Body::update(bool enable_pose_blendshapes) {
 
     // _SMPL_PROFILE(alloc);
 
+    pose().segment<3>(12) = Eigen::Vector3f(0.3f, 0.0f, 0.0f);
     // Copy body pose onto full pose
     full_pose.head(3 * model.n_body_joints).noalias() = pose();
     if (model.n_hand_joints > 0) {
+        // full_pose.tail(6 * model.n_hand_joints).setZero();
         // Use hand PCA weights to fill in hand pose within full pose
         full_pose.segment(3 * model.n_body_joints, 3 * model.n_hand_joints).noalias() =
             model.hand_mean_l + model.hand_comps_l * hand_pca_l();
@@ -59,10 +63,10 @@ void Body::update(bool enable_pose_blendshapes) {
 
     // Apply blend shapes
     {
-        Eigen::Map<Eigen::Vector<Scalar, Eigen::Dynamic> > verts_shaped_flat(verts_shaped.data(),
-                model.n_verts);
-        Eigen::Map<const Eigen::Vector<Scalar, Eigen::Dynamic> > verts_init_flat(model.verts.data(),
-                model.n_verts);
+        Eigen::Map<Eigen::Matrix<Scalar, Eigen::Dynamic, 1> >
+            verts_shaped_flat(verts_shaped.data(), model.n_verts * 3);
+        Eigen::Map<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> >
+            verts_init_flat(model.verts.data(), model.n_verts * 3);
         // Add shape blend shapes
         verts_shaped_flat.noalias() = model.shape_blend * shape() + verts_init_flat;
         if (enable_pose_blendshapes) {
@@ -75,8 +79,8 @@ void Body::update(bool enable_pose_blendshapes) {
 
     {
         // Apply joint regressor
-        joints.resize(model.n_joints, 3);
-        joints = model.joint_reg * verts_shaped;
+        joints_shaped.resize(model.n_joints, 3);
+        joints_shaped = model.joint_reg * verts_shaped;
 
         // _SMPL_PROFILE(jointregr);
         if (deform.rows() == model.n_verts) {
@@ -86,6 +90,7 @@ void Body::update(bool enable_pose_blendshapes) {
         }
     }
 
+    joints.resize(model.n_joints, 3);
     // Complete the affine transforms for each joint by adding translation
     // components and composing with parent
     for (int i = 0; i < model.n_joints; ++i) {
@@ -94,19 +99,21 @@ void Body::update(bool enable_pose_blendshapes) {
         auto p = model.parent[i];
         if (p == -1) {
             transform.template rightCols<1>().noalias()
-                = joints.row(i).transpose() + trans();
+                = joints_shaped.row(i).transpose() + trans();
         } else {
             transform.template rightCols<1>().noalias()
-                = (joints.row(i) - joints.row(p)).transpose();
+                = (joints_shaped.row(i) - joints_shaped.row(p)).transpose();
             util::mul_affine<float, Eigen::RowMajor>(
                     AffineTransformMap(joint_transforms.row(p).data()),
                     transform);
         }
+        // Grab the joint position in case the user wants it
+        joints.row(i).noalias() = transform.topRightCorner<3, 1>().transpose();
     }
     for (int i = 0; i < model.n_joints; ++i) {
         AffineTransformMap transform(joint_transforms.row(i).data());
         // Normalize the translation to global
-        transform.rightCols<1>() -= transform.leftCols<3>() * joints.row(i).transpose();
+        transform.rightCols<1>() -= transform.leftCols<3>() * joints_shaped.row(i).transpose();
     }
 
     // _SMPL_PROFILE(mkaffine);
