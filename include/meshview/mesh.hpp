@@ -111,9 +111,10 @@ public:
     // Set transform
     Mesh& set_transform(const Eigen::Ref<const Matrix4f>& mat);
 
-    // [INTERNAL] Called before first render for each GLFW context to ensure
-    // textures are reconstructed
-    void reinit();
+    // Init or update VAO/VBO/EBO buffers from current vertex and triangle data
+    // Must called before first draw for each GLFW context to ensure
+    // textures are reconstructed.
+    void update();
 
     // *Accessors
     // Position part of verts
@@ -164,9 +165,6 @@ public:
     Matrix4f transform;
 
 private:
-    // Must call before first draw
-    void init_or_update();
-
     // Generate a white 1x1 texture to blank_tex_id
     // used to fill maps if no texture provided
     void gen_blank_texture();

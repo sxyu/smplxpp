@@ -13,6 +13,7 @@ endif (POLICY CMP0072)
 
 project( smpl_cpp )
 option( USE_FFAST_MATH "Enable ffast-math compiler flag, may cause numerical problems" ON )
+option( BUILD_VIEWER "Build OpenGL-based viewer" ON )
 option( USE_SYSTEM_EIGEN "Use system Eigen rather than the included Eigen submodule if available" ON )
 
 set( INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include" )
@@ -20,6 +21,7 @@ set( SRC_DIR "${PROJECT_SOURCE_DIR}/src" )
 set( VENDOR_DIR "${PROJECT_SOURCE_DIR}/3rdparty" )
 set( CNPY_DIR "${VENDOR_DIR}/cnpy" )
 set( STB_DIR "${VENDOR_DIR}/stb" )
+set( IMGUI_DIR "${VENDOR_DIR}/imgui" )
 set( GLFW_DIR "${VENDOR_DIR}/glfw" )
 set( GLEW_DIR "${VENDOR_DIR}/glew" )
 # set( GLM_DIR "${VENDOR_DIR}/glm" )
@@ -32,6 +34,7 @@ set( CMAKE_CXX_STANDARD_REQUIRED ON)
 set( CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake_modules" )
 
 set( PROJ_NAME "smpl_cpp" )
+set( MESHVIEW_NAME "meshview" )
 
 if ( CMAKE_COMPILER_IS_GNUCXX OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang") )
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wno-deprecated-declarations -O3 -funroll-loops -g" )
@@ -65,40 +68,69 @@ if(NOT EXISTS "${GLFW_DIR}/CMakeLists.txt")
    message(FATAL_ERROR "A submodule as not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
-SET(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "GLFW example" FORCE)
-SET(GLFW_BUILD_TESTS OFF CACHE BOOL "GLFW tests" FORCE)
-SET(GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW docs" FORCE)
-SET(GLFW_INSTALL OFF CACHE BOOL "GLFW install" FORCE)
-add_subdirectory(${GLFW_DIR})
+file(GLOB_RECURSE SOURCES ${SRC_DIR}/smpl/*.cpp)
+file(GLOB_RECURSE HEADERS ${INCLUDE_DIR}/smpl/*.cpp)
+file(GLOB_RECURSE MESHVIEW_SOURCES ${SRC_DIR}/meshview/*.cpp)
+file(GLOB_RECURSE MESHVIEW_HEADERS ${INCLUDE_DIR}/meshview/*.cpp)
+
+set( VENDOR_SOURCES ${CNPY_DIR}/cnpy.cpp)
+set( MESHVIEW_VENDOR_SOURCES ${STB_DIR}/stb_image.cpp )
+
+set( DEPENDENCIES )
+
+# OpenMP
+find_package(OpenMP QUIET)
+if (OPENMP_FOUND)
+    message(STATUS "Using OpenMP for parallelization")
+    set( DEPENDENCIES ${DEPENDENCIES} OpenMP::OpenMP_CXX )
+else()
+    message(STATUS "OpenMP not found, CPU performance may suffer")
+endif()
+
+# CUDA
+find_package(CUDA QUIET)
 
 include_directories(
     ${INCLUDE_DIR}
     ${CNPY_DIR}
-    ${STB_DIR}
-    ${GLEW_DIR}/include
-    ${GLFW_DIR}/include
     ${CUDA_INCLUDE_DIRS}
 )
 
-# glew library
-add_library(glew STATIC
-    ${GLEW_DIR}/src/glew.c
-    ${GLEW_DIR}/include
-)
-target_link_libraries(glew ${GLFW_LIBRARIES})
-set_target_properties(glew
-    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/3rdparty/glew")
+if (BUILD_VIEWER)
+    include_directories(
+        ${STB_DIR}
+        ${IMGUI_DIR}
+        ${GLEW_DIR}/include
+        ${GLFW_DIR}/include
+    )
 
-# OpenGL
-find_package(OpenGL REQUIRED)
+    # Viewer dependencies
+    SET(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "GLFW example" FORCE)
+    SET(GLFW_BUILD_TESTS OFF CACHE BOOL "GLFW tests" FORCE)
+    SET(GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW docs" FORCE)
+    SET(GLFW_INSTALL OFF CACHE BOOL "GLFW install" FORCE)
+    add_subdirectory(${GLFW_DIR})
 
-set(
-    DEPENDENCIES
-    OpenGL::GL
-    glfw
-    ${GLFW_LIBRARIES}
-    glew
-)
+    # glew library
+    add_library(glew STATIC
+        ${GLEW_DIR}/src/glew.c
+        ${GLEW_DIR}/include
+    )
+    target_link_libraries(glew ${GLFW_LIBRARIES})
+    set_target_properties(glew
+        PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/3rdparty/glew")
+
+    # OpenGL
+    find_package(OpenGL REQUIRED)
+
+    set(
+        DEPENDENCIES
+        glew
+        OpenGL::GL
+        glfw
+        ${GLFW_LIBRARIES}
+    )
+endif(BUILD_VIEWER)
 
 # Eigen
 if ( USE_SYSTEM_EIGEN )
@@ -127,38 +159,32 @@ else()
     set( DEPENDENCIES ${DEPENDENCIES} zlibstatic )
 endif()
 
-# OpenMP
-find_package(OpenMP QUIET)
-if (OPENMP_FOUND)
-    message(STATUS "Using OpenMP for parallelization")
-    set( DEPENDENCIES ${DEPENDENCIES} OpenMP::OpenMP_CXX )
-else()
-    message(STATUS "OpenMP not found, CPU performance may suffer")
-endif()
-
-# CUDA
-find_package(CUDA QUIET)
-
-set(
-    VENDOR_SOURCES
-    ${GLEW_DIR}/src/glew.c
-    ${CNPY_DIR}/cnpy.cpp
-    ${STB_DIR}/stb_image.cpp
-)
-
-file(GLOB_RECURSE SOURCES ${SRC_DIR}/*.cpp)
-file(GLOB_RECURSE HEADERS ${INCLUDE_DIR}/*.cpp)
-
-add_library( ${PROJ_NAME} ${SOURCES} ${VENDOR_SOURCES} )
-set_target_properties( ${PROJ_NAME} PROPERTIES OUTPUT_NAME "smplxpp" )
+add_library( ${PROJ_NAME} STATIC ${SOURCES} ${VENDOR_SOURCES} )
+set_target_properties( ${PROJ_NAME} PROPERTIES OUTPUT_NAME "smplx" )
 target_link_libraries( ${PROJ_NAME} ${DEPENDENCIES} )
+install(TARGETS ${PROJ_NAME} DESTINATION lib)
 
-add_executable( demo demo.cpp )
-target_link_libraries( demo ${DEPENDENCIES} ${PROJ_NAME} )
+add_executable( example main_example.cpp )
+target_link_libraries( example ${DEPENDENCIES} ${PROJ_NAME} )
+set_target_properties( example PROPERTIES OUTPUT_NAME "smplx-example" )
+install(TARGETS example DESTINATION bin)
+
+if ( BUILD_VIEWER )
+    add_library( ${MESHVIEW_NAME} STATIC ${MESHVIEW_SOURCES} ${MESHVIEW_VENDOR_SOURCES} )
+    set_target_properties( ${MESHVIEW_NAME} PROPERTIES OUTPUT_NAME "meshview" )
+    target_link_libraries( ${MESHVIEW_NAME} ${DEPENDENCIES} )
+    install(TARGETS ${MESHVIEW_NAME} DESTINATION lib)
+
+    add_executable( viewer main_viewer.cpp )
+    target_link_libraries( viewer ${DEPENDENCIES} ${PROJ_NAME} ${MESHVIEW_NAME} )
+    set_target_properties( viewer PROPERTIES OUTPUT_NAME "smplx-viewer" )
+
+    install(TARGETS viewer DESTINATION bin)
+endif( BUILD_VIEWER )
 
 if ( MSVC )
     set_property(TARGET ${PROJ_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG)
-    set_property(TARGET demo APPEND PROPERTY LINK_FLAGS /DEBUG)
+    set_property(TARGET viewer APPEND PROPERTY LINK_FLAGS /DEBUG)
 endif ( MSVC )
 
 if(WIN32)
@@ -175,7 +201,11 @@ elseif(CYGWIN)
 elseif(APPLE)
 elseif(UNIX)
     target_link_libraries( ${PROJ_NAME} -pthread )
-    target_link_libraries( demo -pthread )
+    target_link_libraries( example -pthread )
+    if (BUILD_VIEWER)
+        target_link_libraries( ${MESHVIEW_NAME} -pthread )
+        target_link_libraries( viewer -pthread )
+    endif()
     add_definitions(-DUNIX)
     add_compile_options(-Wno-deprecated-declarations)
     add_compile_options(-Wno-unused-result)
@@ -183,6 +213,6 @@ endif(WIN32)
 
 add_definitions( -DGLEW_STATIC )
 
-source_group( "Header Files" FILES ${HEADERS} )
-source_group( "Source Files" FILES ${SOURCES} )
-source_group( "Vendor Source Files" FILES ${VENDOR_SOURCES} )
+source_group( "Header Files" FILES ${HEADERS} ${MESHVIEW_HEADERS} )
+source_group( "Source Files" FILES ${SOURCES} ${MESHVIEW_SOURCES} )
+source_group( "Vendor Source Files" FILES ${VENDOR_SOURCES} ${MESHVIEW_VENDOR_SOURCES} )

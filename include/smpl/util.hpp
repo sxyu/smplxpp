@@ -25,8 +25,6 @@
 #include<Eigen/Core>
 #include<Eigen/Geometry>
 
-#include "meshview/util.hpp"
-
 namespace smpl {
 namespace util {
 
@@ -68,7 +66,8 @@ inline void mul_affine(const Eigen::Ref<const Eigen::Matrix<T, 3, 4, Option> >& 
         a.template leftCols<3>() * b.template rightCols<1>();
 }
 
-using namespace meshview::util;
+// Path resolve helper
+std::string find_data_file(const std::string& data_path);
 
 }  // namespace util
 }  // namespace smpl

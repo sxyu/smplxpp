@@ -36,9 +36,6 @@ void estimate_normals(const Eigen::Ref<const PointCloud>& verts,
 void estimate_normals(const Eigen::Ref<const PointCloud>& verts,
                       Eigen::Ref<PointCloud> out);
 
-// Path resolve helper
-std::string find_data_file(const std::string& data_path);
-
 }  // namespace util
 }  // namespace meshview
 

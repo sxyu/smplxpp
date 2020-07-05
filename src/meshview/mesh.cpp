@@ -79,7 +79,10 @@ Mesh::~Mesh() {
 
 void Mesh::draw(const Shader& shader, const Camera& camera) {
     if (!enabled) return;
-    init_or_update();
+    if (!~VAO) {
+        std::cerr << "ERROR: Please call meshview::Mesh::update() before Mesh::draw()\n";
+        return;
+    }
 
     // Bind appropriate textures
     MeshIndex tex_id = 1;
@@ -147,12 +150,12 @@ Mesh& Mesh::translate(const Eigen::Ref<const Vector3f>& vec) {
 }
 
 Mesh& Mesh::rotate(const Eigen::Ref<const Matrix3f>& mat) {
-    transform.topRightCorner<3, 3>() = mat * transform.topRightCorner<3, 3>();
+    transform.topLeftCorner<3, 3>() = mat * transform.topRightCorner<3, 3>();
     return *this;
 }
 
 Mesh& Mesh::scale(const Eigen::Ref<const Vector3f>& vec) {
-    transform.topRightCorner<3, 3>().array().colwise() *= vec.array();
+    transform.topLeftCorner<3, 3>().array().colwise() *= vec.array();
     return *this;
 }
 
@@ -162,19 +165,11 @@ Mesh& Mesh::set_transform(const Eigen::Ref<const Matrix4f>& mat) {
 }
 
 Mesh& Mesh::scale(float val) {
-    transform.topRightCorner<3, 3>().array() *= val;
+    transform.topLeftCorner<3, 3>().array() *= val;
     return *this;
 }
 
-void Mesh::reinit() {
-    VAO = -1;
-    for (auto& tex_vec : textures) {
-        for (auto& tex : tex_vec) tex.load();
-    }
-    blank_tex_id = -1;
-}
-
-void Mesh::init_or_update() {
+void Mesh::update() {
     static const size_t SCALAR_SZ = sizeof(Scalar);
     static const size_t POS_OFFSET = 0;
     static const size_t UV_OFFSET = 3 * SCALAR_SZ;
@@ -182,7 +177,10 @@ void Mesh::init_or_update() {
     static const size_t VERT_INDICES = verts.ColsAtCompileTime;
     static const size_t VERT_SZ = VERT_INDICES * SCALAR_SZ;
 
-    if (~VAO) return; // Already initialized
+    for (auto& tex_vec : textures) {
+        for (auto& tex : tex_vec) tex.load();
+    }
+    blank_tex_id = -1;
 
     if (verts.size() != num_verts * VERT_INDICES) {
         std::cerr << "Invalid vertex buf size, expect " << num_verts * VERT_INDICES << "\n";

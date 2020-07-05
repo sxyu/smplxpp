@@ -5,7 +5,7 @@
 #include <functional>
 #include <vector>
 
-#include "meshview/scene.hpp"
+#include "meshview/mesh.hpp"
 #include "meshview/camera.hpp"
 
 namespace meshview {
@@ -27,10 +27,10 @@ public:
     std::vector<Mesh> meshes;
 
     // * Lighting
-    // Ambient light color, default 0.1 0.1 0.1
+    // Ambient light color, default 0.2 0.2 0.2
     Vector3f ambient_light_color;
 
-    // Point light position
+    // Point light position (in VIEW space, so that light follows camera)
     Vector3f light_pos;
     // Light color diffuse/specular, default white
     Vector3f light_color_diffuse;

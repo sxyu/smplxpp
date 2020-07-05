@@ -215,8 +215,8 @@ void Viewer::show() {
 
     glfwSetWindowTitle(window, title.c_str());
 
-    // Initialize textures in each mesh and ask to re-create the VAO
-    for (auto& mesh : meshes) mesh.reinit();
+    // Initialize textures in each mesh and ask to re-create the VAO + textures
+    for (auto& mesh : meshes) mesh.update();
 
     shader.use();
     while (!glfwWindowShouldClose(window)) {
