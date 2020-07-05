@@ -26,6 +26,7 @@ void win_key_callback(GLFWwindow* window, int key, int scancode, int action, int
     if(viewer.on_key && !viewer.on_key(key, action, mods)) return;
 
 #ifdef MESHVIEW_IMGUI
+    ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
     if (ImGui::GetIO().WantCaptureKeyboard) return;
 #endif
 
@@ -98,6 +99,7 @@ void win_mouse_button_callback(GLFWwindow* window, int button, int action, int m
         return;
     }
 #ifdef MESHVIEW_IMGUI
+    ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
     if (ImGui::GetIO().WantCaptureMouse) return;
 #endif
     if (action == GLFW_PRESS) {
@@ -137,6 +139,7 @@ void win_scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
         return;
     }
 #ifdef MESHVIEW_IMGUI
+    ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
     if (ImGui::GetIO().WantCaptureMouse) return;
 #endif
     viewer.camera.zoom_with_mouse((float)yoffset);
@@ -205,6 +208,19 @@ void Viewer::show() {
     glDepthFunc(GL_LESS);
     if (cull_face) glEnable(GL_CULL_FACE);
 
+#ifdef MESHVIEW_IMGUI
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, false);
+    char* glsl_version = NULL;
+    ImGui_ImplOpenGL3_Init(glsl_version);
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
+#endif
+
+
     // Make shader
     Shader shader; //(util::find_data_file("shaders/meshview.vert"),
     //                util::find_data_file("shaders/meshview.frag");
@@ -222,17 +238,6 @@ void Viewer::show() {
     glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
 
     glfwSetWindowTitle(window, title.c_str());
-
-#ifdef MESHVIEW_IMGUI
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    char* glsl_version = NULL;
-    ImGui_ImplOpenGL3_Init(glsl_version);
-    // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
-#endif
 
     if (on_open) on_open();
 
