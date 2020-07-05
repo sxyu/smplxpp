@@ -19,10 +19,24 @@ public:
     // press q/ESC to close window and exit loop
     void show();
 
-    // Scene (meshes and lights)
-    Scene scene;
+    // Shorthand for adding mesh (to Viewer::meshes)
+    Mesh& add(Mesh&& mesh);
+    Mesh& add(const Mesh& mesh);
 
-    // Camera
+    // * The meshes
+    std::vector<Mesh> meshes;
+
+    // * Lighting
+    // Ambient light color, default 0.1 0.1 0.1
+    Vector3f ambient_light_color;
+
+    // Point light position
+    Vector3f light_pos;
+    // Light color diffuse/specular, default white
+    Vector3f light_color_diffuse;
+    Vector3f light_color_specular;
+
+    // * Camera
     Camera camera;
 
     // * Render params

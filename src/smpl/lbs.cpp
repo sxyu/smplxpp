@@ -36,7 +36,6 @@ void Body::update(bool enable_pose_blendshapes) {
 
     // _SMPL_PROFILE(alloc);
 
-    pose().segment<3>(12) = Eigen::Vector3f(0.3f, 0.0f, 0.0f);
     // Copy body pose onto full pose
     full_pose.head(3 * model.n_body_joints).noalias() = pose();
     if (model.n_hand_joints > 0) {

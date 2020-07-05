@@ -31,33 +31,26 @@ int32_t main(int argc, char** argv) {
 
     // body.save_obj("test.obj");
     Viewer viewer;
+    viewer.title = "smplx++ | meshview";
+
     Mesh mesh(model.n_verts, model.n_faces);
     mesh.verts_pos() = body.verts;
     // std::cout << body.verts.middleRows<15>(5500) << "\n\n";
     // std::cout << model.verts.middleRows<15>(5500) << "\n";
     mesh.faces = model.faces;
-    viewer.scene.add(mesh).estimate_normals().set_shininess(4.f)
+    viewer.add(mesh).estimate_normals().set_shininess(4.f)
          .add_texture_solid<Texture::TYPE_DIFFUSE>(1.f, 0.7f, 0.8f)
          .add_texture_solid<Texture::TYPE_SPECULAR>(0.1f, 0.1f, 0.1f);
          // .scale(5.f) ;
 
-    for (size_t i = 0; i < model.n_joints; ++i) {
-        Mesh cube = Mesh::Cube(0.02f);
-        viewer.scene.add(std::move(cube))
-            .set_shininess(32.f)
-            .add_texture_solid<Texture::TYPE_DIFFUSE>(0.7f, 0.8f, 0.8f)
-            // .add_texture<Texture::TYPE_DIFFUSE>(util::find_data_file("tex/container2.png"))
-            // .add_texture<Texture::TYPE_SPECULAR>(util::find_data_file("tex/container2_specular.png"))
-            .translate(body.joints.row(i).transpose());
-    }
-    // std::cout << model.joints << "\nJNT\n";
-    // viewer.scene.add(Mesh::Square(0.5f))
-    //     .set_shininess(32.f)
-    //     .add_texture<Texture::TYPE_DIFFUSE>(util::find_data_file("tex/container2.png"))
-    //     .add_texture<Texture::TYPE_SPECULAR>(util::find_data_file("tex/container2_specular.png"))
-    //     .translate(Vector3f(0,-1,0));
-    viewer.wireframe = false;
-
+    // Crappy joint visualization
+    // for (size_t i = 0; i < model.n_joints; ++i) {
+    //     Mesh cube = Mesh::Cube(0.02f);
+    //     viewer.add(std::move(cube))
+    //         .set_shininess(32.f)
+    //         .add_texture_solid<Texture::TYPE_DIFFUSE>(0.7f, 0.8f, 0.8f)
+    //         .translate(body.joints.row(i).transpose());
+    // }
     viewer.show();
     // viewer.show();
 

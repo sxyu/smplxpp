@@ -113,7 +113,7 @@ public:
 
     // [INTERNAL] Called before first render for each GLFW context to ensure
     // textures are reconstructed
-    void reset();
+    void reinit();
 
     // *Accessors
     // Position part of verts

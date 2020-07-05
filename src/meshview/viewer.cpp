@@ -4,6 +4,7 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <Eigen/Geometry>
 
 #include "meshview/util.hpp"
 #include "meshview/internal/shader_inline.hpp"
@@ -161,6 +162,11 @@ Viewer::Viewer() : _fullscreen(false) {
 #endif
 
     background.setZero();
+
+    ambient_light_color.setConstant(0.2f);
+    light_color_diffuse.setConstant(0.8f);
+    light_color_specular.setConstant(1.f);
+    light_pos << 1.2f, 1.0f, 2.0f;
 }
 
 Viewer::~Viewer() {
@@ -209,13 +215,23 @@ void Viewer::show() {
 
     glfwSetWindowTitle(window, title.c_str());
 
-    scene.reset();
+    // Initialize textures in each mesh and ask to re-create the VAO
+    for (auto& mesh : meshes) mesh.reinit();
+
     shader.use();
     while (!glfwWindowShouldClose(window)) {
         glClearColor(background[0], background[1], background[2], 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        scene.draw(shader, camera);
+        shader.set_vec3("light.ambient", ambient_light_color);
+        shader.set_vec3("light.diffuse", light_color_diffuse);
+        shader.set_vec3("light.specular", light_color_specular);
+        shader.set_vec3("light.position",
+                (camera.view.inverse() * light_pos.homogeneous()).head<3>());
+        shader.set_vec3("viewPos", camera.get_pos());
+        for (auto& mesh : meshes) {
+            mesh.draw(shader, camera);
+        }
         shader.use();
 
         for (auto& cb: loop_callbacks) {
@@ -228,6 +244,14 @@ void Viewer::show() {
     glfwDestroyWindow(window);
 }
 
+Mesh& Viewer::add(Mesh&& mesh) {
+    meshes.push_back(mesh);
+    return meshes.back();
+}
+Mesh& Viewer::add(const Mesh& mesh) {
+    meshes.push_back(mesh);
+    return meshes.back();
+}
 
 
 }  // namespace meshview

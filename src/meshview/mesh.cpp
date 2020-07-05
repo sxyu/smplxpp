@@ -166,7 +166,7 @@ Mesh& Mesh::scale(float val) {
     return *this;
 }
 
-void Mesh::reset() {
+void Mesh::reinit() {
     VAO = -1;
     for (auto& tex_vec : textures) {
         for (auto& tex : tex_vec) tex.load();
