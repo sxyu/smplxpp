@@ -114,7 +114,10 @@ public:
     // Init or update VAO/VBO/EBO buffers from current vertex and triangle data
     // Must called before first draw for each GLFW context to ensure
     // textures are reconstructed.
-    void update();
+    void update(bool force_init = false);
+
+    // ADVANCED: Free buffers. Used automatically in destructor.
+    void free_bufs();
 
     // *Accessors
     // Position part of verts

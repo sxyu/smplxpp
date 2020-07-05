@@ -53,20 +53,29 @@ public:
     Vector3f background;
 
     // * Event callbacks
+    // Called after GL cnotext init
+    std::function<void()> on_open;
+    // Called when window is about to close
+    std::function<void()> on_close;
     // Called per iter of render loop
-    std::vector<std::function<void()> > loop_callbacks;
+    std::function<void()> on_loop;
+    // Called per iter of render loop
+    // - if MESHVIEW_IMGUI defined, calls with Dear ImGui frame already set up
+    //   ie. ready to use ImGui::Begin etc
+    // - else, called after loop_callback
+    std::function<void()> on_gui;
     // Called on key up/down/repeat: args (key, action, mods), return false to prevent default
     // see https://www.glfw.org/docs/3.3/group__input.html for info on action
     // see https://www.glfw.org/docs/3.3/group__mods.html on mods
-    std::vector<std::function<bool(int, int, int)> > key_callbacks;
+    std::function<bool(int, int, int)> on_key;
     // Called on mouse up/down/repeat: args (button, action, mods), return false to prevent default
     // see https://www.glfw.org/docs/3.3/group__input.html for info on button
     // see https://www.glfw.org/docs/3.3/group__mods.html on mods
-    std::vector<std::function<bool(int, int, int)> > mouse_button_callbacks;
-    // Called on mouse move: return false to prevent default
-    std::vector<std::function<bool()> > mouse_move_callbacks;
+    std::function<bool(int, int, int)> on_mouse_button;
+    // Called on mouse move: args(x, y) return false to prevent default
+    std::function<bool(double, double)> on_mouse_move;
     // Called on mouse scroll: args(xoffset, yoffset) return false to prevent default
-    std::vector<std::function<bool(double, double)> > scroll_callbacks;
+    std::function<bool(double, double)> on_scroll;
 
     // * Dynamic data (advanced, for use in callbacks)
     // Window width/height, as set in system
@@ -84,6 +93,9 @@ public:
 
     // Window pos/size prior to full screen
     int _fullscreen_backup[4];
+
+    // Pointer to GLFW window object
+    void* _window = nullptr;
 };
 
 }  // namespace meshview

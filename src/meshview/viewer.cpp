@@ -9,21 +9,26 @@
 #include "meshview/util.hpp"
 #include "meshview/internal/shader_inline.hpp"
 
+#ifdef MESHVIEW_IMGUI
+#include "imgui_impl_opengl3.h"
+#include "imgui_impl_glfw.h"
+#endif
+
 namespace {
 void error_callback(int error, const char *description) {
     std::cerr << description << "\n";
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    bool prevent_default = false;
+void win_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 
     meshview::Viewer& viewer = *reinterpret_cast<meshview::Viewer*>(
             glfwGetWindowUserPointer(window));
-    for (auto& cb : viewer.key_callbacks) {
-        prevent_default |= !cb(key, action, mods);
-    }
+    if(viewer.on_key && !viewer.on_key(key, action, mods)) return;
 
-    if (prevent_default) return;
+#ifdef MESHVIEW_IMGUI
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
+#endif
+
     if (action == GLFW_PRESS) {
         switch(key) {
             case GLFW_KEY_ESCAPE: case 'Q':
@@ -81,36 +86,37 @@ F:                         toggle fullscreen window
     }
 }
 
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-    bool prevent_default = false;
+void win_mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
 
     meshview::Viewer& viewer = *reinterpret_cast<meshview::Viewer*>(
             glfwGetWindowUserPointer(window));
     glfwGetCursorPos(window, &viewer._mouse_x, &viewer._mouse_y);
-    for (auto& cb : viewer.mouse_button_callbacks) {
-        prevent_default |= !cb(button, action, mods);
+
+    if (action == GLFW_RELEASE) viewer._mouse_button = -1;
+    if (viewer.on_mouse_button &&
+            !viewer.on_mouse_button(button, action, mods)) {
+        return;
     }
-    if (action == GLFW_RELEASE) {
-        viewer._mouse_button = -1;
-    }
-    if (prevent_default) return;
+#ifdef MESHVIEW_IMGUI
+    if (ImGui::GetIO().WantCaptureMouse) return;
+#endif
     if (action == GLFW_PRESS) {
         viewer._mouse_button = button;
         viewer._mouse_mods = mods;
     }
 }
 
-void mouse_move_callback(GLFWwindow* window, double x, double y) {
+void win_mouse_move_callback(GLFWwindow* window, double x, double y) {
     bool prevent_default = false;
 
     meshview::Viewer& viewer = *reinterpret_cast<meshview::Viewer*>(
             glfwGetWindowUserPointer(window));
     double prex = viewer._mouse_x, prey = viewer._mouse_y;
     viewer._mouse_x = x, viewer._mouse_y = y;
-    for (auto& cb : viewer.mouse_move_callbacks) {
-        prevent_default |= !cb();
+    if (viewer.on_mouse_move &&
+            !viewer.on_mouse_move(x, y)) {
+        return;
     }
-    if (prevent_default) return;
     if (viewer._mouse_button != -1) {
         if ((viewer._mouse_button == GLFW_MOUSE_BUTTON_LEFT &&
             (viewer._mouse_mods & GLFW_MOD_SHIFT)) ||
@@ -123,20 +129,21 @@ void mouse_move_callback(GLFWwindow* window, double x, double y) {
     }
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-    bool prevent_default = false;
-
+void win_scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     meshview::Viewer& viewer = *reinterpret_cast<meshview::Viewer*>(
             glfwGetWindowUserPointer(window));
-    for (auto& cb : viewer.scroll_callbacks) {
-        prevent_default |= !cb(xoffset, yoffset);
+    if (viewer.on_scroll &&
+            !viewer.on_scroll(xoffset, yoffset)) {
+        return;
     }
-    if (prevent_default) return;
+#ifdef MESHVIEW_IMGUI
+    if (ImGui::GetIO().WantCaptureMouse) return;
+#endif
     viewer.camera.zoom_with_mouse((float)yoffset);
 }
 
 // Window resize
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+void win_framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     meshview::Viewer& viewer = *reinterpret_cast<meshview::Viewer*>(
             glfwGetWindowUserPointer(window));
     viewer.camera.set_aspect((float)width / (float)height);
@@ -180,6 +187,7 @@ void Viewer::show() {
         std::cerr << "GLFW window creation failed\n";
         return;
     }
+    _window = (void*)window;
 
     camera.set_aspect((float)_width / (float)_height);
 
@@ -204,19 +212,32 @@ void Viewer::show() {
     shader.compile(DATA_VERTEX_SHADER, DATA_FRAGMENT_SHADER);
 
     // Events
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-    glfwSetCursorPosCallback(window, mouse_move_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetKeyCallback(window, win_key_callback);
+    glfwSetMouseButtonCallback(window, win_mouse_button_callback);
+    glfwSetCursorPosCallback(window, win_mouse_move_callback);
+    glfwSetScrollCallback(window, win_scroll_callback);
+    glfwSetFramebufferSizeCallback(window, win_framebuffer_size_callback);
     glfwSetWindowUserPointer(window, this);
 
     glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
 
     glfwSetWindowTitle(window, title.c_str());
 
-    // Initialize textures in each mesh and ask to re-create the VAO + textures
-    for (auto& mesh : meshes) mesh.update();
+#ifdef MESHVIEW_IMGUI
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    char* glsl_version = NULL;
+    ImGui_ImplOpenGL3_Init(glsl_version);
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+#endif
+
+    if (on_open) on_open();
+
+    // Initialize textures in each mesh and ask to re-create the buffers + textures
+    for (auto& mesh : meshes) mesh.update(true);
 
     shader.use();
     while (!glfwWindowShouldClose(window)) {
@@ -234,13 +255,41 @@ void Viewer::show() {
         }
         shader.use();
 
-        for (auto& cb: loop_callbacks) {
-            cb();
-        }
+        if (on_loop) on_loop();
+
+#ifdef MESHVIEW_IMGUI
+        glOrtho(0, _width, _height, 0, 0, 1);
+
+        // feed inputs to dear imgui, start new frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+#endif
+
+        if (on_gui) on_gui();
+
+#ifdef MESHVIEW_IMGUI
+        // Render dear imgui into screen
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#endif
 
         glfwSwapBuffers(window);
         glfwWaitEvents();
     }
+
+    if (on_close) on_close();
+
+    for (auto& mesh : meshes) {
+        mesh.free_bufs(); // Delete any existing buffers to prevent memory leak
+    }
+
+#ifdef MESHVIEW_IMGUI
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+#endif
+    _window = nullptr;
     glfwDestroyWindow(window);
 }
 

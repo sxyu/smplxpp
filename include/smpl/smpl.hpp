@@ -139,7 +139,7 @@ public:
                 model.n_hand_pca * 2));
     _SMPL_MEMBER_ACCESSOR(hand_pca_l, data.segment(3 + 3 * model.n_body_joints,
                 model.n_hand_pca));
-    _SMPL_MEMBER_ACCESSOR(hand_pca_r, hand_pca().tail(model.n_body_joints));
+    _SMPL_MEMBER_ACCESSOR(hand_pca_r, hand_pca().tail(model.n_hand_pca));
     // Shape params
     _SMPL_MEMBER_ACCESSOR(shape, data.tail(model.n_shape_blends));
 

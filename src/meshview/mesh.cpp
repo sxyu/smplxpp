@@ -71,10 +71,7 @@ Mesh::Mesh(size_t num_verts, size_t num_triangles) : num_verts(num_verts),
 }
 
 Mesh::~Mesh() {
-    if (~VAO) glDeleteVertexArrays(1, &VAO);
-    if (~VBO) glDeleteBuffers(1, &VBO);
-    if (~num_triangles && ~EBO) glDeleteBuffers(1, &EBO);
-    if (~blank_tex_id) glDeleteTextures(1, &blank_tex_id);
+    free_bufs();
 }
 
 void Mesh::draw(const Shader& shader, const Camera& camera) {
@@ -169,18 +166,13 @@ Mesh& Mesh::scale(float val) {
     return *this;
 }
 
-void Mesh::update() {
+void Mesh::update(bool force_init) {
     static const size_t SCALAR_SZ = sizeof(Scalar);
     static const size_t POS_OFFSET = 0;
     static const size_t UV_OFFSET = 3 * SCALAR_SZ;
     static const size_t NORMALS_OFFSET = 5 * SCALAR_SZ;
     static const size_t VERT_INDICES = verts.ColsAtCompileTime;
     static const size_t VERT_SZ = VERT_INDICES * SCALAR_SZ;
-
-    for (auto& tex_vec : textures) {
-        for (auto& tex : tex_vec) tex.load();
-    }
-    blank_tex_id = -1;
 
     if (verts.size() != num_verts * VERT_INDICES) {
         std::cerr << "Invalid vertex buf size, expect " << num_verts * VERT_INDICES << "\n";
@@ -195,10 +187,24 @@ void Mesh::update() {
     const size_t BUF_SZ = verts.size() * SCALAR_SZ;
     const size_t INDEX_SZ = faces.size() * SCALAR_SZ;
 
-    // create buffers/arrays
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    if (~num_triangles) glGenBuffers(1, &EBO);
+    // Already initialized
+    if (!force_init && ~VAO) {
+        for (auto& tex_vec : textures) {
+            for (auto& tex : tex_vec) {
+                if (!~tex.id) tex.load();
+            }
+        }
+    } else {
+        for (auto& tex_vec : textures) {
+            for (auto& tex : tex_vec) tex.load();
+        }
+        blank_tex_id = -1;
+
+        // create buffers/arrays
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        if (~num_triangles) glGenBuffers(1, &EBO);
+    }
 
     glBindVertexArray(VAO);
     // load data into vertex buffers
@@ -224,6 +230,13 @@ void Mesh::update() {
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, VERT_SZ, (GLvoid*)NORMALS_OFFSET);
     glBindVertexArray(0);
+}
+
+void Mesh::free_bufs() {
+    if (~VAO) glDeleteVertexArrays(1, &VAO);
+    if (~VBO) glDeleteBuffers(1, &VBO);
+    if (~num_triangles && ~EBO) glDeleteBuffers(1, &EBO);
+    if (~blank_tex_id) glDeleteTextures(1, &blank_tex_id);
 }
 
 void Mesh::gen_blank_texture() {

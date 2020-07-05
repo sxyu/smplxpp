@@ -73,6 +73,8 @@ file(GLOB_RECURSE HEADERS ${INCLUDE_DIR}/smpl/*.cpp)
 file(GLOB_RECURSE MESHVIEW_SOURCES ${SRC_DIR}/meshview/*.cpp)
 file(GLOB_RECURSE MESHVIEW_HEADERS ${INCLUDE_DIR}/meshview/*.cpp)
 
+file(GLOB IMGUI_SOURCES ${IMGUI_DIR}/*.cpp)
+
 set( VENDOR_SOURCES ${CNPY_DIR}/cnpy.cpp)
 set( MESHVIEW_VENDOR_SOURCES ${STB_DIR}/stb_image.cpp )
 
@@ -97,6 +99,7 @@ include_directories(
 )
 
 if (BUILD_VIEWER)
+    add_definitions( -DMESHVIEW_IMGUI )
     include_directories(
         ${STB_DIR}
         ${IMGUI_DIR}
@@ -118,7 +121,7 @@ if (BUILD_VIEWER)
     )
     target_link_libraries(glew ${GLFW_LIBRARIES})
     set_target_properties(glew
-        PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/3rdparty/glew")
+        PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/3rdparty/libs")
 
     # OpenGL
     find_package(OpenGL REQUIRED)
@@ -170,7 +173,8 @@ set_target_properties( example PROPERTIES OUTPUT_NAME "smplx-example" )
 install(TARGETS example DESTINATION bin)
 
 if ( BUILD_VIEWER )
-    add_library( ${MESHVIEW_NAME} STATIC ${MESHVIEW_SOURCES} ${MESHVIEW_VENDOR_SOURCES} )
+    add_library( ${MESHVIEW_NAME} STATIC ${MESHVIEW_SOURCES} ${IMGUI_SOURCES}
+            ${MESHVIEW_VENDOR_SOURCES} )
     set_target_properties( ${MESHVIEW_NAME} PROPERTIES OUTPUT_NAME "meshview" )
     target_link_libraries( ${MESHVIEW_NAME} ${DEPENDENCIES} )
     install(TARGETS ${MESHVIEW_NAME} DESTINATION lib)
