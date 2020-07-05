@@ -76,6 +76,7 @@ R"HELP(Meshview help (c) Alex Yu 2020
 left click + drag:         rotate view
 shift + left click + drag: pan view
 middle click + drag:       pan view (alt)
+ctrl + left click + drag:  roll view
 Z:                         reset view
 W:                         toggle wireframe
 C:                         toggle backface culling
@@ -125,6 +126,10 @@ void win_mouse_move_callback(GLFWwindow* window, double x, double y) {
              viewer._mouse_button == GLFW_MOUSE_BUTTON_MIDDLE) {
             // Pan
             viewer.camera.pan_with_mouse((float)(x - prex), (float)(y - prey));
+        } else if (viewer._mouse_button == GLFW_MOUSE_BUTTON_LEFT &&
+            (viewer._mouse_mods & GLFW_MOD_CONTROL)) {
+            // Roll
+            viewer.camera.roll_with_mouse((float)(x - prex), (float)(y - prey));
         } else if (viewer._mouse_button == GLFW_MOUSE_BUTTON_LEFT) {
             viewer.camera.rotate_with_mouse((float)(x - prex), (float)(y - prey));
         }
@@ -149,7 +154,8 @@ void win_scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 void win_framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     meshview::Viewer& viewer = *reinterpret_cast<meshview::Viewer*>(
             glfwGetWindowUserPointer(window));
-    viewer.camera.set_aspect((float)width / (float)height);
+    viewer.camera.aspect = (float)width / (float)height;
+    viewer.camera.update_proj();
     glViewport(0, 0, width, height);
 }
 }  // namespace
@@ -192,7 +198,8 @@ void Viewer::show() {
     }
     _window = (void*)window;
 
-    camera.set_aspect((float)_width / (float)_height);
+    camera.aspect = (float)_width / (float)_height;
+    camera.update_proj();
 
     glfwMakeContextCurrent(window);
 

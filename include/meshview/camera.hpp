@@ -19,6 +19,7 @@ class Camera {
                float dist_to_center = 3.f,
                float yaw = -M_PI/2,
                float pitch = 0.0f,
+               float roll = 0.0f,
                float fovy = M_PI / 4.f,
                float aspect = 5.f / 3.f,
                float z_close = 0.1f,
@@ -27,31 +28,15 @@ class Camera {
         // Get camera position
         inline Vector3f get_pos() const { return pos; }
 
-        // * View *
-        // Set center of rotation
-        void set_center(const Eigen::Ref<const Vector3f >& val);
-        // Set world up direction; changes how mouse rotation x/y behaves
-        void set_world_up(const Eigen::Ref<const Vector3f >& val);
-        // Set distance to center of rotation (zoom)
-        void set_dist(float dist);
-        // Set yaw
-        void set_yaw(float yaw);
-        // Set pitch
-        void set_pitch(float yaw);
-        // Set 'orientation' (vertical inversion of world_up,
-        // to allow 360-degree rotation with euler angles)
-        void set_orientation(bool flip);
+        // Update view matrix, call after changing any view parameter
+        void update_view();
 
-        // * Projection *
-        // Set vertical field-of-view in radians (default PI/4 = 45 degs)
-        void set_fovy(float val);
-        // Set width/height ratio of viewport (default 5/3)
-        void set_aspect(float val);
-        // Set clipping distances (default 0.1, 1000)
-        void set_clip(float z_close_new, float z_far_new);
+        // Update proj matrix, call after changing any projection parameter
+        void update_proj();
 
         // Handlers
         void rotate_with_mouse(float xoffset, float yoffset);
+        void roll_with_mouse(float xoffset, float yoffset);
         void pan_with_mouse(float xoffset, float yoffset);
         void zoom_with_mouse(float amount);
 
@@ -62,34 +47,25 @@ class Camera {
         Matrix4f view;
         Matrix4f proj;
 
-        // Camera control options
-        float pan_speed = .0015f;
-        float rotate_speed = .008f;
+        // Camera mouse control options
+        float pan_speed = .0015f, rotate_speed = .008f, scroll_factor = 1.1f;
 
-    private:
-        // View parameters
-        Vector3f pos, center_of_rot;
-        Vector3f front, up, right, world_up; // right only used for euler angles
+        // * Projection parameters
+        // Field of view, aspect ratio
+        float fovy, aspect;
+        // Clip distances
+        float z_close, z_far;
+
+        // * View parameters
+        Vector3f center_of_rot;
+        // Directions
+        Vector3f front, up, world_up;
         float dist_to_center;
 
         // Euler angles
-        float yaw, pitch;
-
-        // Projection parameters
-        float fovy, aspect, z_close, z_far;
-
-        // Either 1 or -1: if -1 then the camera is upside-down
-        // (only used for euler angles)
-        float euler_up_orientation = 1.f;
-
-        // Compute vectors from euler angles + world_up
-        void vectors_from_euler();
-
-        // Update view matrix
-        void update_view();
-
-        // Update proj matrix
-        void update_proj();
+        float yaw, pitch, roll;
+    private:
+        Vector3f pos, right;            // right only used for euler angles
 };
 
 }  // namespace meshview

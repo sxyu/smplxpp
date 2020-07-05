@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
 
     viewer.on_gui = [&]() {
         // * GUI code
-        ImGui::Begin("SMPL Parameters", NULL);
+        ImGui::Begin("Model Parameters", NULL);
         if(ImGui::SliderFloat3("position", body.trans().data(), -5.f, 5.f)) update();
         if (ImGui::TreeNode("Pose")) {
             const int STEP = 10;
@@ -83,7 +83,13 @@ int main(int argc, char** argv) {
             }
             ImGui::TreePop();
         }
-        ImGui::End(); // SMPL Parameters
+        ImGui::End(); // Model Parameters
+
+        ImGui::Begin("Camera", NULL);
+        // static Eigen::Vector3f camera_center = viewer.camera.set_center;
+        // if(ImGui::SliderFloat("dist_to_cen", viewer.camera.center, 0.01f, 5.f)) update();
+
+        ImGui::End(); // Model Parameters
     };
     viewer.show();
 
