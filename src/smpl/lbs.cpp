@@ -55,8 +55,9 @@ void Body::update(bool enable_pose_blendshapes) {
         joint_trans.template leftCols<3>().noalias()
             = util::rodrigues<float>(full_pose.segment<3>(3 * i));
         if (i) {
-            RotationMap(pose_rotation_flat.data() + 9 * i - 9).noalias()
-                = joint_trans.template leftCols<3>();
+            RotationMap mp(pose_rotation_flat.data() + 9 * i - 9);
+            mp.noalias() = joint_trans.template leftCols<3>();
+            mp.diagonal().array() -= 1.f;
         }
     }
     // _SMPL_PROFILE(rodrigues);
