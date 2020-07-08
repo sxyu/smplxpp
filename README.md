@@ -60,7 +60,7 @@ Expressive Body Capture: 3D Hands, Face, and Body from a Single Image. G. Pavlak
 The following dependencies are included in the repo and don't need to be installed
 - cnpy (for npy/npz I/O) https://github.com/rogersce/cnpy
     - zlib: needed by cnpy to read npz (uses system zlib if available)
-- Eigen 3 (I have 3.3.7) http://eigen.tuxfamily.org/
-    (uses system zlib if available, unless CMake option USE_SYSTEM_EIGEN=OFF)
+- Eigen *3.3.90* http://eigen.tuxfamily.org/
+    - Note this is NEWER than the latest release! The latest release seems to have issues wit hCUDA (?), so I vendored the version on master.
 - The following are used only if building viewer:
     glew 2, glfw 3.3, ImGui, stb_image
