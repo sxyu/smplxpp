@@ -1,0 +1,1 @@
+0 TODO: collect SMPL uv map from past project and put here

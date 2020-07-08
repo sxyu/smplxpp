@@ -1,0 +1,2 @@
+#pragma once
+@_SMPLX_CUDA_ENABLED_@#define SMPLX_CUDA_ENABLED

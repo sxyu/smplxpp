@@ -32,9 +32,9 @@ Matrix4f look_toward(const Eigen::Ref<const Vector3f>& pos,
     return m;
 }
 
-void estimate_normals(const Eigen::Ref<const PointCloud>& verts,
+void estimate_normals(const Eigen::Ref<const Points>& verts,
                       const Eigen::Ref<const Triangles>& faces,
-                      Eigen::Ref<PointCloud> out) {
+                      Eigen::Ref<Points> out) {
     if (faces.rows() == 0) {
         // Defer to 'no-element-buffer' version
         estimate_normals(verts, out);
@@ -57,8 +57,8 @@ void estimate_normals(const Eigen::Ref<const PointCloud>& verts,
     out.array().colwise() /= face_cnt.array();
 }
 
-void estimate_normals(const Eigen::Ref<const PointCloud>& verts,
-                      Eigen::Ref<PointCloud> out) {
+void estimate_normals(const Eigen::Ref<const Points>& verts,
+                      Eigen::Ref<Points> out) {
     Vector face_cnt(verts.rows());
     face_cnt.setZero();
     out.setZero();

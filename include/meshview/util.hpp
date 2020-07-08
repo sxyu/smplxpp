@@ -25,16 +25,16 @@ Matrix4f look_toward(const Eigen::Ref<const Vector3f>& pos,
 // Estimate normals given points in pointcloud with given *triangles*
 // outputs normals into out. If faces is empty, same as 'no element buffer' version.
 // NOTE: out must already be of same size as verts
-void estimate_normals(const Eigen::Ref<const PointCloud>& verts,
+void estimate_normals(const Eigen::Ref<const Points>& verts,
                       const Eigen::Ref<const Triangles>& faces,
-                      Eigen::Ref<PointCloud> out);
+                      Eigen::Ref<Points> out);
 
 // Estimate normals given points in pointcloud with no element buffer
 // (point 0,1,2 are 1st triangle, 3,4,5 2nd, etc..)
 // outputs normals into out.
 // NOTE: out must already be of same size as verts
-void estimate_normals(const Eigen::Ref<const PointCloud>& verts,
-                      Eigen::Ref<PointCloud> out);
+void estimate_normals(const Eigen::Ref<const Points>& verts,
+                      Eigen::Ref<Points> out);
 
 }  // namespace util
 }  // namespace meshview

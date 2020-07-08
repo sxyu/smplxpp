@@ -4,7 +4,7 @@
 
 namespace meshview {
 
-static const char* DATA_VERTEX_SHADER = R"SHADER(
+static const char* MESH_VERTEX_SHADER = R"SHADER(
 #version 330 core
 
 // Input vertex data, different for all executions of this shader.
@@ -17,8 +17,6 @@ out vec2 TexCoord;
 out vec3 Normal;
 
 uniform mat4 M;
-// uniform mat4 V;
-// uniform mat4 P;
 uniform mat4 MVP;
 uniform mat3 NormalMatrix;
 
@@ -30,7 +28,7 @@ void main() {
 }
 )SHADER";
 
-static const char* DATA_FRAGMENT_SHADER = R"SHADER(
+static const char* MESH_FRAGMENT_SHADER = R"SHADER(
 #version 330 core
 
 // Ouput data
@@ -89,6 +87,34 @@ void main(){
 
     // Finish
     FragColor = vec4(ambient + diffuse + specular, 1.0f);
+}
+)SHADER";
+
+static const char* POINTCLOUD_VERTEX_SHADER = R"SHADER(
+#version 330 core
+
+// Input vertex data, different for all executions of this shader.
+layout(location = 0) in vec3 aPosition;
+layout(location = 1) in vec3 aColor;
+
+out vec3 Color;
+
+uniform mat4 M;
+uniform mat4 MVP;
+void main() {
+    Color = aColor;
+    gl_Position = MVP * vec4(aPosition, 1.0f);
+}
+)SHADER";
+
+static const char* POINTCLOUD_FRAGMENT_SHADER = R"SHADER(
+#version 330 core
+
+out vec4 FragColor; // Ouput data
+in vec3 Color; // Color
+void main(){
+    // Finish
+    FragColor = vec4(Color, 1.0f);
 }
 )SHADER";
 

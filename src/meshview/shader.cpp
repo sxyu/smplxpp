@@ -35,12 +35,12 @@ void check_compile_errors(GLuint shader, const std::string& type) {
 
 }  // namespace
 
-Shader::Shader() : id((MeshIndex)-1) {}
+Shader::Shader() : id((Index)-1) {}
 
-Shader::Shader(const std::string& vertex_path,
-        const std::string& fragment_path,
-        const std::string& geometry_path) {
-    load(vertex_path, fragment_path, geometry_path);
+Shader::Shader(const std::string& vertex_code,
+        const std::string& fragment_code,
+        const std::string& geometry_code) {
+    compile(vertex_code, fragment_code, geometry_code);
 }
 
 void Shader::load(const std::string& vertex_path,
@@ -84,7 +84,7 @@ void Shader::compile(const std::string& vertex_code,
     const char* v_shader_code = vertex_code.c_str();
     const char * f_shader_code = fragment_code.c_str();
     // 2. compile shaders
-    MeshIndex vertex, fragment;
+    Index vertex, fragment;
     // vertex shader
     vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex, 1, &v_shader_code, NULL);
@@ -96,7 +96,7 @@ void Shader::compile(const std::string& vertex_code,
     glCompileShader(fragment);
     check_compile_errors(fragment, "FRAGMENT");
     // if geometry shader is given, compile geometry shader
-    MeshIndex geometry;
+    Index geometry;
     if(geometry_code.size()) {
         const char * g_shader_code = geometry_code.c_str();
         geometry = glCreateShader(GL_GEOMETRY_SHADER);
@@ -119,7 +119,7 @@ void Shader::compile(const std::string& vertex_code,
 }
 
 void Shader::use() {
-    if (id == (MeshIndex)-1) {
+    if (id == (Index)-1) {
         std::cerr << "Shader is not initialized\n";
         return;
     }

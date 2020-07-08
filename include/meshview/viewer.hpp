@@ -22,9 +22,14 @@ public:
     // Shorthand for adding mesh (to Viewer::meshes)
     Mesh& add(Mesh&& mesh);
     Mesh& add(const Mesh& mesh);
+    // Shorthand for adding point_cloud (to Viewer::point_clouds)
+    PointCloud& add(PointCloud&& mesh);
+    PointCloud& add(const PointCloud& mesh);
 
     // * The meshes
     std::vector<Mesh> meshes;
+    // * The point clouds
+    std::vector<PointCloud> point_clouds;
 
     // * Lighting
     // Ambient light color, default 0.2 0.2 0.2

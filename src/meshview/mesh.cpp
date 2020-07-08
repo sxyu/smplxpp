@@ -9,6 +9,20 @@
 
 namespace meshview {
 
+namespace {
+
+void shader_set_transform_matrices(
+        const Shader& shader, const Camera& camera, const Matrix4f& transform) {
+    shader.set_mat4("M", transform);
+    shader.set_mat4("MVP", camera.proj * camera.view * transform);
+
+    auto normal_matrix = transform.topLeftCorner<3, 3>().inverse().transpose();
+    shader.set_mat3("NormalMatrix", normal_matrix);
+}
+
+}  // namespace
+
+// *** Texture ***
 Texture::Texture(const std::string& path, bool flip, int type)
     : type(type), path(path), fallback_color(/*pink*/ 1.f, 0.75f, 0.8f), flip(flip) {
 }
@@ -61,8 +75,9 @@ void Texture::load() {
     }
 }
 
+// *** Mesh ***
 Mesh::Mesh(size_t num_verts, size_t num_triangles) : num_verts(num_verts),
-    num_triangles(num_triangles), VAO(-1) {
+    num_triangles(num_triangles), VAO((Index)-1) {
     verts.resize(num_verts, verts.ColsAtCompileTime);
     if (~num_triangles) {
         faces.resize(num_triangles, faces.ColsAtCompileTime);
@@ -70,9 +85,7 @@ Mesh::Mesh(size_t num_verts, size_t num_triangles) : num_verts(num_verts),
     transform.setIdentity();
 }
 
-Mesh::~Mesh() {
-    free_bufs();
-}
+Mesh::~Mesh() { free_bufs(); }
 
 void Mesh::draw(const Shader& shader, const Camera& camera) {
     if (!enabled) return;
@@ -82,16 +95,16 @@ void Mesh::draw(const Shader& shader, const Camera& camera) {
     }
 
     // Bind appropriate textures
-    MeshIndex tex_id = 1;
+    Index tex_id = 1;
     bool use_blank_tex = false;;
     for(int ttype = 0; ttype < Texture::__TYPE_COUNT; ++ttype) {
         const char* ttype_name = Texture::type_to_name(ttype);
         auto& tex_vec = textures[ttype];
-        MeshIndex cnt  = 0;
+        Index cnt  = 0;
         for(size_t i = 0; i < tex_vec.size(); i++, tex_id++) {
             glActiveTexture(GL_TEXTURE0 + tex_id); // Active proper texture unit before binding
             // Retrieve texture number (the N in diffuse_textureN)
-            MeshIndex number = 0;
+            Index number = 0;
 
             // Now set the sampler to the correct texture unit
             shader.set_int("material." + std::string(ttype_name)
@@ -112,18 +125,14 @@ void Mesh::draw(const Shader& shader, const Camera& camera) {
     shader.set_float("material.shininess", shininess);
 
     // Set space transform matrices
-    shader.set_mat4("M", transform);
-    shader.set_mat4("MVP", camera.proj * camera.view * transform);
-
-    auto normal_matrix = transform.topLeftCorner<3, 3>().inverse().transpose();
-    shader.set_mat3("NormalMatrix", normal_matrix);
+    shader_set_transform_matrices(shader, camera, transform);
 
     // Draw mesh
     glBindVertexArray(VAO);
     if (~num_triangles) {
         glDrawElements(GL_TRIANGLES, faces.size(), GL_UNSIGNED_INT, 0);
     } else {
-        glDrawArrays(GL_TRIANGLES, 0, verts.rows());
+        glDrawArrays(GL_TRIANGLES, 0, num_verts);
     }
     glBindVertexArray(0);
 
@@ -138,31 +147,6 @@ Mesh& Mesh::estimate_normals() {
 
 Mesh& Mesh::set_shininess(float val) {
     shininess = val;
-    return *this;
-}
-
-Mesh& Mesh::translate(const Eigen::Ref<const Vector3f>& vec) {
-    transform.topRightCorner<3, 1>() += vec;
-    return *this;
-}
-
-Mesh& Mesh::rotate(const Eigen::Ref<const Matrix3f>& mat) {
-    transform.topLeftCorner<3, 3>() = mat * transform.topRightCorner<3, 3>();
-    return *this;
-}
-
-Mesh& Mesh::scale(const Eigen::Ref<const Vector3f>& vec) {
-    transform.topLeftCorner<3, 3>().array().colwise() *= vec.array();
-    return *this;
-}
-
-Mesh& Mesh::set_transform(const Eigen::Ref<const Matrix4f>& mat) {
-    transform = mat;
-    return *this;
-}
-
-Mesh& Mesh::scale(float val) {
-    transform.topLeftCorner<3, 3>().array() *= val;
     return *this;
 }
 
@@ -331,5 +315,106 @@ Mesh Mesh::Cube(float side_len) {
         -side_len,  side_len,  side_len,    0.0f,  0.0f,    0.0f,  1.0f,  0.0f;
     return m;
 }
+
+// *** PointCloud ***
+PointCloud::PointCloud(size_t num_verts) : num_verts(num_verts), VAO((Index)-1) {
+    verts.resize(num_verts, verts.ColsAtCompileTime);
+    transform.setIdentity();
+}
+PointCloud::~PointCloud() { free_bufs(); }
+
+void PointCloud::update(bool force_init) {
+    static const size_t SCALAR_SZ = sizeof(Scalar);
+    static const size_t POS_OFFSET = 0;
+    static const size_t RGB_OFFSET = 3 * SCALAR_SZ;
+    static const size_t VERT_INDICES = verts.ColsAtCompileTime;
+    static const size_t VERT_SZ = VERT_INDICES * SCALAR_SZ;
+
+    if (verts.size() != num_verts * VERT_INDICES) {
+        std::cerr << "Invalid vertex buf size, expect " << num_verts * VERT_INDICES << "\n";
+        return;
+    }
+
+    const size_t BUF_SZ = verts.size() * SCALAR_SZ;
+
+    // Already initialized
+    if (force_init || !~VAO) {
+        // Create buffers/arrays
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+    }
+    glBindVertexArray(VAO);
+    // load data into vertex buffers
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    // A great thing about structs is that their memory layout is sequential for all its items.
+    // The effect is that we can simply pass a pointer to the struct and it translates perfectly to a glm::vec3/2 array which
+    // again translates to 3/2 floats which translates to a byte array.
+    glBufferData(GL_ARRAY_BUFFER, BUF_SZ, (GLvoid*) verts.data(), GL_STATIC_DRAW);
+
+    // set the vertex attribute pointers
+    // vertex positions
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERT_SZ, (GLvoid*)POS_OFFSET);
+    // vertex color
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERT_SZ, (GLvoid*)RGB_OFFSET);
+    glBindVertexArray(0);
+}
+
+void PointCloud::draw(const Shader& shader, const Camera& camera) {
+    if (!enabled) return;
+    if (!~VAO) {
+        std::cerr << "ERROR: Please call meshview::PointCloud::update() before PointCloud::draw()\n";
+        return;
+    }
+
+    // Set point size
+    glPointSize(point_size);
+
+    // Set space transform matrices
+    shader_set_transform_matrices(shader, camera, transform);
+
+    // Draw mesh
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_POINTS, 0, num_verts);
+    glBindVertexArray(0);
+
+    // Always good practice to set everything back to defaults once configured.
+    glActiveTexture(GL_TEXTURE0);
+}
+
+void PointCloud::free_bufs() {
+    if (~VAO) glDeleteVertexArrays(1, &VAO);
+    if (~VBO) glDeleteBuffers(1, &VBO);
+}
+
+// *** Shared ***
+// Define identical function for both mesh, pointcloud classes
+#define BOTH_MESH_AND_POINTCLOUD(fbody) Mesh& Mesh::fbody PointCloud& PointCloud::fbody
+
+BOTH_MESH_AND_POINTCLOUD(translate(const Eigen::Ref<const Vector3f>& vec) {
+    (transform.topRightCorner<3,1>() += vec);
+    return *this;
+})
+
+BOTH_MESH_AND_POINTCLOUD(rotate(const Eigen::Ref<const Matrix3f>& mat) {
+    (transform.topLeftCorner<3, 3>() = mat * transform.topRightCorner<3, 3>());
+    return *this;
+})
+
+BOTH_MESH_AND_POINTCLOUD(scale(const Eigen::Ref<const Vector3f>& vec) {
+    (transform.topLeftCorner<3, 3>().array().colwise() *= vec.array());
+    return *this;
+})
+
+BOTH_MESH_AND_POINTCLOUD(scale(float val) {
+    (transform.topLeftCorner<3, 3>().array() *= val);
+    return *this;
+})
+
+BOTH_MESH_AND_POINTCLOUD(set_transform(const Eigen::Ref<const Matrix4f>& mat) {
+    transform = mat;
+    return *this;
+})
 
 }  // namespace meshview

@@ -45,7 +45,7 @@ struct Texture {
     void load();
 
     // GL texture id; -1 if unavailable
-    MeshIndex id = -1;
+    Index id = -1;
 
     // File path (optional)
     std::string path;
@@ -121,13 +121,13 @@ public:
 
     // *Accessors
     // Position part of verts
-    inline Eigen::Ref<PointCloud> verts_pos() { return verts.leftCols<3>(); }
+    inline Eigen::Ref<Points> verts_pos() { return verts.leftCols<3>(); }
 
     // UV part of verts
-    inline Eigen::Ref<PointCloud2D> verts_uv() { return verts.middleCols<2>(3); }
+    inline Eigen::Ref<Points2D> verts_uv() { return verts.middleCols<2>(3); }
 
     // Normal part of verts
-    inline Eigen::Ref<PointCloud> verts_norm() { return verts.rightCols<3>(); }
+    inline Eigen::Ref<Points> verts_norm() { return verts.rightCols<3>(); }
 
     // * Example meshes
     // Triangle
@@ -149,7 +149,7 @@ public:
     // 3 x vertex position
     // 2 x uv
     // 3 x normal
-    PointCloudUVN verts;
+    PointsUVN verts;
 
     // Shape (num_triangles, 3)
     // Triangle indices, empty if num_triangles = -1 (not using EBO)
@@ -173,10 +173,67 @@ private:
     void gen_blank_texture();
 
     // Vertex Array Object index
-    MeshIndex VAO = -1;
+    Index VAO = -1;
 
-    MeshIndex VBO = -1, EBO = -1;
-    MeshIndex blank_tex_id = -1;
+    Index VBO = -1, EBO = -1;
+    Index blank_tex_id = -1;
+};
+
+// A  object with vertices (including uv, normals), colors
+class PointCloud {
+public:
+    explicit PointCloud(size_t num_verts);
+    ~PointCloud();
+
+    // Draw mesh to shader wrt camera
+    void draw(const Shader& shader, const Camera& camera);
+
+    // Position part of verts
+    inline Eigen::Ref<Points> verts_pos() { return verts.leftCols<3>(); }
+    // RGB part of verts
+    inline Eigen::Ref<Points> verts_rgb() { return verts.rightCols<3>(); }
+
+    // Set the point size for drawing
+    inline PointCloud & set_point_size(float val) { point_size = val; return *this; }
+
+    // Apply translation
+    PointCloud& translate(const Eigen::Ref<const Vector3f>& vec);
+
+    // Apply rotation
+    PointCloud& rotate(const Eigen::Ref<const Matrix3f>& mat);
+    // Apply scaling
+    PointCloud& scale(const Eigen::Ref<const Vector3f>& vec);
+    // Apply uniform scaling
+    PointCloud& scale(float val);
+
+    // Set transform
+    PointCloud& set_transform(const Eigen::Ref<const Matrix4f>& mat);
+
+    // Init or update VAO/VBO buffers from current vertex data
+    // Must called before first draw for each GLFW context to ensure
+    // textures are reconstructed.
+    void update(bool force_init = false);
+
+    // ADVANCED: Free buffers. Used automatically in destructor.
+    void free_bufs();
+
+    const size_t num_verts;
+
+    // Data store
+    PointsRGB verts;
+
+    // Whether this point cloud is enabled; if false, does not draw anything
+    bool enabled = true;
+
+    // Point size for drawing
+    float point_size = 1.f;
+
+    // Model local transfom
+    Matrix4f transform;
+
+private:
+    // Buffer indices
+    Index VAO = -1, VBO = -1;
 };
 
 }  // namespace meshview

@@ -14,10 +14,10 @@ class Shader {
 public:
     Shader();
 
-    // Load shader on construction from path
-    Shader(const std::string& vertex_path,
-           const std::string& fragment_path,
-           const std::string& geometry_path = "");
+    // Load shader on construction from code
+    Shader(const std::string& vertex_code,
+           const std::string& fragment_code,
+           const std::string& geometry_code = "");
 
     // Generates the shader on the fly from file
     void load(const std::string& vertex_path,
@@ -48,7 +48,7 @@ public:
     void set_mat4(const std::string &name, const Eigen::Ref<const Matrix4f> &mat) const;
 
     // GL shader id
-    MeshIndex id;
+    Index id;
 };
 
 }  // namespace meshview

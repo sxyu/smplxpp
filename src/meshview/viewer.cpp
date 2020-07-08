@@ -72,7 +72,7 @@ void win_key_callback(GLFWwindow* window, int key, int scancode, int action, int
                       break;
             case 'H':
                   std::cout <<
-R"HELP(Meshview help (c) Alex Yu 2020
+R"HELP(Meshview (c) Alex Yu 2020
 left click + drag:         rotate view
 shift + left click + drag: pan view
 middle click + drag:       pan view (alt)
@@ -212,6 +212,7 @@ void Viewer::show() {
     }
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_PROGRAM_POINT_SIZE);
     glDepthFunc(GL_LESS);
     if (cull_face) glEnable(GL_CULL_FACE);
 
@@ -228,11 +229,9 @@ void Viewer::show() {
 #endif
 
 
-    // Make shader
-    Shader shader; //(util::find_data_file("shaders/meshview.vert"),
-    //                util::find_data_file("shaders/meshview.frag");
-    // Use inlined version
-    shader.compile(DATA_VERTEX_SHADER, DATA_FRAGMENT_SHADER);
+    // Compile shaders
+    Shader shader_mesh(MESH_VERTEX_SHADER, MESH_FRAGMENT_SHADER);
+    Shader shader_pc(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER);
 
     // Events
     glfwSetKeyCallback(window, win_key_callback);
@@ -248,24 +247,30 @@ void Viewer::show() {
 
     if (on_open) on_open();
 
-    // Initialize textures in each mesh and ask to re-create the buffers + textures
+    // Ask to re-create the buffers + textures in meshes/pointclouds
     for (auto& mesh : meshes) mesh.update(true);
+    for (auto& pc : point_clouds) pc.update(true);
 
-    shader.use();
+    shader_mesh.use();
     while (!glfwWindowShouldClose(window)) {
         glClearColor(background[0], background[1], background[2], 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        shader.set_vec3("light.ambient", ambient_light_color);
-        shader.set_vec3("light.diffuse", light_color_diffuse);
-        shader.set_vec3("light.specular", light_color_specular);
-        shader.set_vec3("light.position",
+        shader_mesh.use();
+        shader_mesh.set_vec3("light.ambient", ambient_light_color);
+        shader_mesh.set_vec3("light.diffuse", light_color_diffuse);
+        shader_mesh.set_vec3("light.specular", light_color_specular);
+        shader_mesh.set_vec3("light.position",
                 (camera.view.inverse() * light_pos.homogeneous()).head<3>());
-        shader.set_vec3("viewPos", camera.get_pos());
+        shader_mesh.set_vec3("viewPos", camera.get_pos());
         for (auto& mesh : meshes) {
-            mesh.draw(shader, camera);
+            mesh.draw(shader_mesh, camera);
         }
-        shader.use();
+
+        shader_pc.use();
+        for (auto& pc : point_clouds) {
+            pc.draw(shader_pc, camera);
+        }
 
         if (on_loop) on_loop();
 
@@ -312,6 +317,15 @@ Mesh& Viewer::add(Mesh&& mesh) {
 Mesh& Viewer::add(const Mesh& mesh) {
     meshes.push_back(mesh);
     return meshes.back();
+}
+
+PointCloud& Viewer::add(PointCloud&& point_cloud) {
+    point_clouds.push_back(point_cloud);
+    return point_clouds.back();
+}
+PointCloud& Viewer::add(const PointCloud& point_cloud) {
+    point_clouds.push_back(point_cloud);
+    return point_clouds.back();
 }
 
 

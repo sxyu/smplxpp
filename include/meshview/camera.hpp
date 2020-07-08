@@ -42,6 +42,8 @@ class Camera {
 
         // Reset the view
         void reset_view();
+        // Reset the projection
+        void reset_proj();
 
         // Camera matrices
         Matrix4f view;
