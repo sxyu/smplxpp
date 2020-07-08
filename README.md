@@ -5,13 +5,13 @@ SMPL-X C++ implementation in Eigen and CUDA. (WIP!)
 
 ### Optional Dependencies
 - OpenGL 3+ (Required to build the viewer)
-- CUDA Toolkit, supporing C++ 14 (I have CUDA 11, not tested with earlier versions)
+- CUDA Toolkit supporting C++ 14 (I have CUDA 11, not tested with earlier versions)
 
 ## Getting the SMPL/SMPL+H/SMPL-X Models
 - See [data/models/README.md](https://github.com/sxyu/smplxpp/tree/master/data/models)
 
 ## Building
-Note: I have only tried building on Ubuntu 20.04. However, it should not be hard to build the project in other systems, since it is fairly lightweight.
+Note: I have only tried building on Ubuntu 20.04. Hopefully it should not be hard to build the project on other systems, since the project is lightweight and has few dependencies.
 
 - To configure, `mkdir build && cd build && cmake ..`
     - To disable the OpenGL Viewer, replace the above cmake command with `cmake .. -D SMPLX_BUILD_VIEWER=OFF`
