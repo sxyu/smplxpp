@@ -29,11 +29,12 @@ Note: I have only tried building on Ubuntu 20.04. Hopefully it should not be har
         - MODEL should be S/H/X, where S means SMPL, H means SMPL+H, X means SMPL-X. Default S
         - GENDER should be NEUTRAL/MALE/FEMALE; NEUTRAL is default (case insensitive)
         - Example: `./smplx-viewer X MALE`, `./smplx-viewer H FEMALE`
+        - `./smplx-viewer` will open plain neutral SMPL model (if available)
 - `smplx-amass`: AMASS viewer
     - Usage: `./smplx-amass [MODEL [npz_path]]
         - MODEL should be S/H/X, where S means SMPL, H means SMPL+H, X means SMPL-X. Default **H**
-        - npz_path: optionally, path to AMASS .npz to load If not specified,
-          opens a blank viewer with option to browse and load a npz
+        - npz_path: optionally, path to AMASS .npz to load on open
+        - `./smplx-amass` opens a blank viewer with option to browse for and load a npz
 ## Library usage
 - TBA, refer to examples (`main_*.cpp`) for now
 

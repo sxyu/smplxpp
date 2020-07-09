@@ -1,6 +1,6 @@
 // Displays AMASS sequence in a OpenGL 3D viewer
 // 2 optional arguments:
-// 1. model type, default S
+// 1. model type, default H
 //    options: S H X (SMPL SMPL-H SMPL-X)
 // 2. sequence (AMASS .npz) path. If not specified,
 //    opens a blank viewer with option to browse and load a npz
