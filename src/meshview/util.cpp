@@ -46,7 +46,7 @@ void estimate_normals(const Eigen::Ref<const Points>& verts,
     out.setZero();
 
     Eigen::RowVector3f face_normal;
-    for (size_t i = 0; i < faces.rows(); ++i) {
+    for (int i = 0; i < faces.rows(); ++i) {
         face_normal = (verts.row(faces(i, 1)) - verts.row(faces(i, 0))).cross(
                 verts.row(faces(i, 2)) - verts.row(faces(i, 1))).normalized();
         for (int j = 0; j < 3; ++j) {
@@ -63,7 +63,7 @@ void estimate_normals(const Eigen::Ref<const Points>& verts,
     face_cnt.setZero();
     out.setZero();
     Vector3f face_normal;
-    for (size_t i = 0; i < verts.rows(); i += 3) {
+    for (int i = 0; i < verts.rows(); i += 3) {
         face_cnt.segment<3>(i).array() += 1.f;
         out.middleRows<3>(i).rowwise() += (verts.row(i + 1) - verts.row(i)).cross(
                                            verts.row(i + 2) - verts.row(i + 1)).normalized();

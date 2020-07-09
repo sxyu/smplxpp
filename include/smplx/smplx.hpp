@@ -104,7 +104,7 @@ public:
 
     // ** DATA **
     // Kinematic tree: joint children
-    std::vector<std::vector<int> > children;
+    std::vector<std::vector<size_t> > children;
 
     // Points in the initial mesh, (#verts, 3)
     Points verts;
@@ -236,6 +236,12 @@ private:
 
     // Deformed joints (shape and pose applied)
     mutable Points _joints;
+	
+	// Transform local to global coordinates
+	// Inputs: trans(), _joints_shaped
+	// Outputs: _joints
+	// Input/output: _joint_transforms
+	void _local_to_global();
 
 #ifdef SMPLX_CUDA_ENABLED
 public:
@@ -252,9 +258,12 @@ public:
     } device;
 
 private:
-    mutable bool verts_retrieved, joints_retrieved;
+	// True if latest deformed vertices constructed by update()
+	// have been retrieved to main memory
+    mutable bool _verts_retrieved;
+	// True if last update made use of the GPU
     bool _last_update_used_gpu;
-
+	// Cuda helpers
     void _cuda_load();
     void _cuda_free();
     void _cuda_maybe_retrieve_verts() const;

@@ -4,7 +4,6 @@
 
 #include "smplx/smplx.hpp"
 #include "smplx/util.hpp"
-#include "smplx/internal/local_to_global.hpp"
 
 namespace smplx {
 
@@ -51,7 +50,7 @@ const Points& Body<ModelConfig>::joints() const {
 // Main LBS routine
 template<class ModelConfig>
 void Body<ModelConfig>::update(bool force_cpu, bool enable_pose_blendshapes) {
-    _SMPLX_BEGIN_PROFILE;
+    // _SMPLX_BEGIN_PROFILE;
     // Will store full pose params (angle-axis), including hand
     Vector full_pose(3 * model.n_joints());
 
@@ -124,8 +123,9 @@ void Body<ModelConfig>::update(bool force_cpu, bool enable_pose_blendshapes) {
     // Apply joint regressor
     _joints_shaped = model.joint_reg * _verts_shaped;
 
-    local_to_global<ModelConfig>(trans(), _joints_shaped, _joints, _joint_transforms);
-    // _SMPLX_PROFILE(localglobal);
+    // local_to_global<ModelConfig>(trans(), _joints_shaped, _joints, _joint_transforms);
+    _local_to_global();
+	// _SMPLX_PROFILE(localglobal);
 
     // * LBS *
     // Construct a transform for each vertex
@@ -140,6 +140,39 @@ void Body<ModelConfig>::update(bool force_cpu, bool enable_pose_blendshapes) {
             _verts_shaped.row(i).homogeneous() * transform.transpose();
     }
     // _SMPLX_PROFILE(lbs point transform);
+}
+
+template<class ModelConfig>
+void Body<ModelConfig>::_local_to_global() {
+    _joints.resize(ModelConfig::n_joints(), 3);
+    using AffineTransformMap = Eigen::Map<Eigen::Matrix<Scalar, 3, 4, Eigen::RowMajor> >;
+    // Handle root joint transforms
+    AffineTransformMap root_transform(_joint_transforms.topRows<1>().data());
+    root_transform.template rightCols<1>().noalias() =
+        _joints_shaped.topRows<1>().transpose() + trans();
+    _joints.template topRows<1>().noalias() = root_transform.template rightCols<1>().transpose();
+
+    // Complete the affine transforms for all other joint by adding translation
+    // components and composing with parent
+    for (int i = 1; i < ModelConfig::n_joints(); ++i) {
+        AffineTransformMap transform(_joint_transforms.row(i).data());
+        const auto p = ModelConfig::parent[i];
+        // Set relative translation
+        transform.template rightCols<1>().noalias() =
+            (_joints_shaped.row(i) - _joints_shaped.row(p)).transpose();
+        // Compose rotation with parent
+        util::mul_affine<float, Eigen::RowMajor>(
+            AffineTransformMap(_joint_transforms.row(p).data()), transform);
+        // Grab the joint position in case the user wants it
+        _joints.row(i).noalias() = transform.template rightCols<1>().transpose();
+    }
+
+    for (int i = 0; i < ModelConfig::n_joints(); ++i) {
+        AffineTransformMap transform(_joint_transforms.row(i).data());
+        // Normalize the translation to global
+        transform.template rightCols<1>().noalias() -=
+            transform.template leftCols<3>() * _joints_shaped.row(i).transpose();
+    }
 }
 
 template<class ModelConfig>

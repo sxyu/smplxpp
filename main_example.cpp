@@ -12,10 +12,11 @@ int main(int argc, char** argv) {
     // X axis rotation of r-knee
     body.pose()(3 * /*r knee*/5) = 0.5f;
     // See include/smplx/model_config.hpp for joint names
-    srand(time(NULL));
+    srand((unsigned) time(NULL));
     _SMPLX_BEGIN_PROFILE;
     body.update();
     const auto& verts = body.verts();
-    _SMPLX_PROFILE(update + transfer time);
+	_SMPLX_PROFILE(update + transfer time);
     body.save_obj("out.obj");
+	std::cout << "Wrote to out.obj\n";
 }

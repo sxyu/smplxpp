@@ -70,7 +70,7 @@ void Shader::load(const std::string& vertex_path,
             g_shader_file.close();
             geometry_code = g_shader_stream.str();
         }
-    } catch (std::ifstream::failure& e) {
+    } catch (std::ifstream::failure&) {
         std::cout << "ERROR: shader file not succesfully read, "
                      "did you delete data/shaders/?" << std::endl;
         return;

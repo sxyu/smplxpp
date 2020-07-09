@@ -117,9 +117,9 @@ void Mesh::draw(const Shader& shader, const Camera& camera) {
     // Draw mesh
     glBindVertexArray(VAO);
     if (~num_triangles) {
-        glDrawElements(GL_TRIANGLES, faces.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, (GLsizei)faces.size(), GL_UNSIGNED_INT, 0);
     } else {
-        glDrawArrays(GL_TRIANGLES, 0, num_verts);
+        glDrawArrays(GL_TRIANGLES, 0, (GLsizei)num_verts);
     }
     glBindVertexArray(0);
 
@@ -380,7 +380,7 @@ void PointCloud::draw(const Shader& shader, const Camera& camera) {
 
     // Draw mesh
     glBindVertexArray(VAO);
-    glDrawArrays(lines ? GL_LINES : GL_POINTS, 0, num_verts);
+    glDrawArrays(lines ? GL_LINES : GL_POINTS, 0, (GLsizei)num_verts);
     glBindVertexArray(0);
 
     // Always good practice to set everything back to defaults once configured.

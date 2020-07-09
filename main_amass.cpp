@@ -145,7 +145,7 @@ static int run(std::string path) {
         if (amass.n_frames) {
             ImGui::TextWrapped("Seq: %s", path.c_str());
             ImGui::Text("Frame %i (%i total)", frame, (int)amass.n_frames);
-            if (ImGui::SliderInt("Frame##framectl", &frame, 0, amass.n_frames - 1)) {
+            if (ImGui::SliderInt("Frame##framectl", &frame, 0, (int)amass.n_frames - 1)) {
                 frame_start = frame;
                 if (playing)
                     time_start = std::chrono::high_resolution_clock::now();

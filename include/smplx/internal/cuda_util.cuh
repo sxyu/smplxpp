@@ -114,9 +114,9 @@ template <int Option>
 __host__ void from_host_eigen_sparse_matrix(internal::GPUSparseMatrix& d_data,
                             const Eigen::SparseMatrix<float, Option>& src) {
     const size_t nnz = src.nonZeros();
-    d_data.nnz = nnz;
-    d_data.cols = src.cols();
-    d_data.rows = src.rows();
+    d_data.nnz = (int) nnz;
+    d_data.cols = (int) src.cols();
+    d_data.rows = (int) src.rows();
     cudaMalloc((void**)&d_data.values, nnz * sizeof(float));
     cudaMemcpy(d_data.values, src.valuePtr(), nnz * sizeof(float),
                cudaMemcpyHostToDevice);

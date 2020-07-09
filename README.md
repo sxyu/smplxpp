@@ -15,7 +15,7 @@ AMASS integration included.
   project to work)
 
 ## Building
-Note: I have only tried building on Ubuntu 20.04. Hopefully it should not be hard to build the project on other systems, since the project is lightweight and has few dependencies.
+Note: I have built successfully on Ubuntu 20.04 and Windows 10 (VS2019). The project appears to run about 1.5x slower on Windows for some reason.
 
 - To configure, `mkdir build && cd build && cmake ..`
     - To disable the OpenGL Viewer, replace the above cmake command with `cmake .. -D SMPLX_BUILD_VIEWER=OFF`

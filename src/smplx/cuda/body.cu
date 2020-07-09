@@ -3,7 +3,6 @@
 #include "smplx/smplx.hpp"
 #include "smplx/util.hpp"
 #include "smplx/internal/cuda_util.cuh"
-#include "smplx/internal/local_to_global.hpp"
 
 namespace smplx {
 namespace {
@@ -151,11 +150,11 @@ __host__ void Body<ModelConfig>::_cuda_free() {
 }
 template<class ModelConfig>
 __host__ void Body<ModelConfig>::_cuda_maybe_retrieve_verts() const {
-    if (!verts_retrieved) {
+    if (!_verts_retrieved) {
         _verts.resize(model.verts.rows(), 3);
         cudaMemcpy(_verts.data(), device.verts, _verts.size() * sizeof(float),
                    cudaMemcpyDeviceToHost);
-        verts_retrieved = true;
+        _verts_retrieved = true;
     }
 }
 
@@ -165,8 +164,8 @@ SMPLX_HOST void Body<ModelConfig>::_cuda_update(
         float* h_blendshape_params,
         float* h_joint_transforms,
         bool enable_pose_blendshapes) {
-    // Joints, verts will be updated
-    joints_retrieved = verts_retrieved = false;
+    // Verts will be updated
+    _verts_retrieved = false;
 
     // Copy parameters to GPU
     cudaCheck(cudaMemcpyAsync(device.blendshape_params, h_blendshape_params,
@@ -201,7 +200,7 @@ SMPLX_HOST void Body<ModelConfig>::_cuda_update(
     // Actually, this is pretty bad too, TODO try implementing on GPU again
     cudaMemcpy(_joints_shaped.data(), device.joints_shaped, model.n_joints() * 3 * sizeof(float),
                cudaMemcpyDeviceToHost);
-    local_to_global<ModelConfig>(trans(), _joints_shaped, _joints, _joint_transforms);
+    _local_to_global();
     cudaMemcpyAsync(device.joint_transforms, _joint_transforms.data(),
             _joint_transforms.size() * sizeof(float), cudaMemcpyHostToDevice);
 
