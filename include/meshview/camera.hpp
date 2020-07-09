@@ -45,8 +45,10 @@ class Camera {
         // Reset the projection
         void reset_proj();
 
-        // Camera matrices
+        // * Camera matrices
+        // View matrix: global -> view coords
         Matrix4f view;
+        // Projection matrix: view -> clip coords (perspective)
         Matrix4f proj;
 
         // Camera mouse control options
@@ -59,15 +61,18 @@ class Camera {
         float z_close, z_far;
 
         // * View parameters
+        // Center of rotation
         Vector3f center_of_rot;
-        // Directions
+        // Normalized direction vectors
         Vector3f front, up, world_up;
+        // Distance to cor
         float dist_to_center;
 
-        // Euler angles
+        // Euler angles, for mouse control
         float yaw, pitch, roll;
     private:
-        Vector3f pos, right;            // right only used for euler angles
+        // For caching only; right = front cross up; pos = cor - d2c * front
+        Vector3f pos, right;
 };
 
 }  // namespace meshview

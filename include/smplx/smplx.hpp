@@ -159,8 +159,10 @@ private:
 using ModelS = Model<model_config::SMPL>;
 // SMPL+H Model
 using ModelH = Model<model_config::SMPLH>;
-// SMPL-X Model
+// SMPL-X Model with hand joint rotations
 using ModelX = Model<model_config::SMPLX>;
+// SMPL-X Model with hand PCA
+using ModelXpca = Model<model_config::SMPLXpca>;
 
 // A particular SMPL instance, with pose/shape/hand parameters.
 // Includes parameter vector + cloud data
@@ -266,8 +268,10 @@ private:
 using BodyS = Body<model_config::SMPL>;
 // SMPL-H Body
 using BodyH = Body<model_config::SMPLH>;
-// SMPL-X Body
+// SMPL-X Body with hand joint rotations
 using BodyX = Body<model_config::SMPLX>;
+// SMPL-X Body with hand PCA
+using BodyXpca = Body<model_config::SMPLXpca>;
 
 }  // namespace smpl
 

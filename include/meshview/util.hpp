@@ -13,11 +13,13 @@ namespace util {
 // z_near/z_far: clip distances
 Matrix4f persp(float xscale, float yscale, float z_near, float z_far);
 
-// Make look at matrix
+// Returns 'look at' matrix
+// IMPORTANT: fw is normalized forward direction,
+// NOT the point to look at!
 // pos: camera position
-// fw: forward direction (normalized)
-// up: up direction for camera (normalized)
-Matrix4f look_toward(const Eigen::Ref<const Vector3f>& pos,
+// fw: forward direction (must be normalized)
+// up: up direction for camera (must be normalized)
+Matrix4f look_at(const Eigen::Ref<const Vector3f>& pos,
                      const Eigen::Ref<const Vector3f>& fw,
                      const Eigen::Ref<const Vector3f>& up);
 

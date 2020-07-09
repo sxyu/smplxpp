@@ -10,6 +10,9 @@ AMASS integration included.
 
 ## Getting the SMPL/SMPL+H/SMPL-X Models
 - See [data/models/README.md](https://github.com/sxyu/smplxpp/tree/master/data/models)
+- Set `SMPLX_DIR` environment variable to the project root directory to allow finding
+  default data files (else you must `cd` to project root or in a subdirectory for the
+  project to work)
 
 ## Building
 Note: I have only tried building on Ubuntu 20.04. Hopefully it should not be hard to build the project on other systems, since the project is lightweight and has few dependencies.
@@ -22,17 +25,23 @@ Note: I have only tried building on Ubuntu 20.04. Hopefully it should not be har
 
 ## Example programs
 - `smplx-example`: Writes SMPL-X model to`out.obj`
-    - Usage: `./smplx-example [GENDER]` where GENDER should be NEUTRAL/MALE/FEMALE; NEUTRAL is default (case insensitive)
+    - Usage: `./smplx-example gender` where gender (optional, case insensitive)
+      should be NEUTRAL/MALE/FEMALE; NEUTRAL is default
 - `smplx-viewer` (if `SMPLX_BUILD_VIEWER=ON` in CMake):
    Shows an interactive 3D viewer, including parameter controls
-    - Usage: `./smplx-viewer [MODEL [GENDER]]` where
-        - MODEL should be S/H/X, where S means SMPL, H means SMPL+H, X means SMPL-X. Default S
-        - GENDER should be NEUTRAL/MALE/FEMALE; NEUTRAL is default (case insensitive)
+    - Usage: `./smplx-viewer model gender device poseblends where
+        - All arguments are position and optional
+        - model may be S/H/X/P, where S means SMPL, H means SMPL+H, X means SMPL-X (with hand joints), and P means SMPL-X (with hand PCA). Default is S
+        - gender may be NEUTRAL/MALE/FEMALE; NEUTRAL is default (case insensitive)
+        - device may be gpu/cpu; gpu is default and will fallback to cpu automatically
+        - poseblends may be on/off, default on; off turns off pose blendshapes, which
+          speeds up computation dramatically
         - Example: `./smplx-viewer X MALE`, `./smplx-viewer H FEMALE`
         - `./smplx-viewer` will open plain neutral SMPL model (if available)
 - `smplx-amass`: AMASS viewer
-    - Usage: `./smplx-amass [MODEL [npz_path]]
-        - MODEL should be S/H/X, where S means SMPL, H means SMPL+H, X means SMPL-X. Default **H**
+    - Usage: `./smplx-amass model npz_path`
+        - All arguments are position and optional
+        - model may be `S/H/X`, where S means SMPL, H means SMPL+H, X means SMPL-X. Note P (hand PCA) is not available for AMASS integration. Default **H**
         - npz_path: optionally, path to AMASS .npz to load on open
         - `./smplx-amass` opens a blank viewer with option to browse for and load a npz
 ## Library usage

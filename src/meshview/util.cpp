@@ -19,7 +19,7 @@ Matrix4f persp(float xscale, float yscale, float z_near, float z_far) {
     return m;
 }
 
-Matrix4f look_toward(const Eigen::Ref<const Vector3f>& pos,
+Matrix4f look_at(const Eigen::Ref<const Vector3f>& pos,
                      const Eigen::Ref<const Vector3f>& fw,
                      const Eigen::Ref<const Vector3f>& up) {
     Matrix4f m;

@@ -138,7 +138,7 @@ static int run(std::string path) {
             open_file_dialog.SetTitle("Open AMASS npz");
         }
         ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
-        ImGui::SetNextWindowSize(ImVec2(300, 150), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(300, 180), ImGuiCond_Once);
         ImGui::Begin("Control", NULL);
         ImGui::Text("Model: %s  Gender: %s", model.name(),
                 util::gender_to_str(model.gender));

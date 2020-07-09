@@ -4,72 +4,15 @@
 
 #include "smplx/smplx.hpp"
 #include "smplx/sequence_config.hpp"
+#include "smplx/internal/sequence_model_spec.hpp"
 namespace smplx {
 
+// Note: SequenceModelSpec is in smplx/internal/sequence_model_spec.hpp
 
-template<class SequenceConfig> class Sequence;
-
-namespace internal {
-    // Sadly, C++ does not allow specialization of template classes,
-    // so we have to implement in a separate struct;
-    // Also, C++14 doesn't allow specializing member structs, so we have to put it here
-    template<class SequenceConfig, class ModelConfig>
-    struct SequenceModelSpec {
-        // Set shape
-        static void set_shape(const Sequence<SequenceConfig>& seq,
-                Body<ModelConfig>& body) {
-            throw std::invalid_argument(std::string(
-                        "smplx::Sequence does not currently support model: ") +
-                    ModelConfig::model_name);
-        }
-        // Set pose and root transform
-        static void set_pose(const Sequence<SequenceConfig>& seq,
-                Body<ModelConfig>& body, size_t frame) {
-            throw std::invalid_argument(std::string(
-                        "smplx::Sequence does not currently support model: ") +
-                    ModelConfig::model_name);
-        }
-    };
-
-    // Per-model specialization
-    template <class SequenceConfig>
-    struct SequenceModelSpec<SequenceConfig, model_config::SMPL> {
-        static void set_shape(const Sequence<SequenceConfig>& seq,
-                Body<model_config::SMPL>& body) {
-            body.shape().noalias() = seq.shape
-                .template head<model_config::SMPL::n_shape_blends()>();
-        }
-        static void set_pose(const Sequence<SequenceConfig>& seq,
-                Body<model_config::SMPL>& body, size_t frame) {
-            constexpr size_t n_common_joints = SequenceConfig::n_body_joints() * 3;
-            body.trans().noalias() = seq.trans.row(frame).transpose();
-            body.pose().template head<n_common_joints>().noalias() =
-                seq.pose.row(frame).template head<n_common_joints>().transpose();
-            body.pose()
-                .template tail<model_config::SMPL::n_explicit_joints() * 3
-                                    - n_common_joints>()
-                .setZero();
-        }
-    };
-
-    template <class SequenceConfig>
-    struct SequenceModelSpec<SequenceConfig, model_config::SMPLH> {
-        static void set_shape(const Sequence<SequenceConfig>& seq,
-                Body<model_config::SMPLH>& body) {
-            body.shape().noalias() = seq.shape;
-        }
-        static void set_pose(const Sequence<SequenceConfig>& seq,
-                Body<model_config::SMPLH>& body, size_t frame) {
-            constexpr size_t n_common_joints = SequenceConfig::n_body_joints() * 3;
-            body.trans().noalias() = seq.trans.row(frame).transpose();
-            body.pose().noalias() = seq.pose.row(frame).transpose();
-        }
-    };
-}  // namespace internal
-
-// SEQUENCE interface
-// An pose+shape sequence
+// An AMASS-compatible body pose+translation[+DMPL] sequence
+// with overall shape and gender information
 // SequenceConfig: pick from smplx::sequence_config::*
+// (currently only AMASS available)
 template<class SequenceConfig>
 class Sequence {
 public:
@@ -118,6 +61,7 @@ public:
     Eigen::Matrix<Scalar, Eigen::Dynamic, SequenceConfig::n_dmpls(), Eigen::RowMajor> dmpls;
 };
 
+// An AMASS sequence
 using SequenceAMASS = Sequence<sequence_config::AMASS>;
 
 }  // namespace smplx

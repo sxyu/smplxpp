@@ -87,8 +87,8 @@ void Model<ModelConfig>::load(const std::string& path, const std::string& uv_pat
     blend_shapes.template rightCols<n_pose_blends()>().noalias() =
         util::load_float_matrix(pb_raw, 3 * n_verts(), n_pose_blends());
 
-    if (npz.count("hands_meanl") && npz.count("hands_meanr")) {
-        // Model has hands (e.g. SMPL-X, SMPL+H), load hand PCA
+    if (n_hand_pca() && npz.count("hands_meanl") && npz.count("hands_meanr")) {
+        // Model has hand PCA (e.g. SMPLXpca), load hand PCA
         const auto& hml_raw = npz.at("hands_meanl");
         const auto& hmr_raw = npz.at("hands_meanr");
         const auto& hcl_raw = npz.at("hands_componentsl");
@@ -152,6 +152,7 @@ Model<ModelConfig>::~Model() {
 template class Model<model_config::SMPL>;
 template class Model<model_config::SMPLH>;
 template class Model<model_config::SMPLX>;
+template class Model<model_config::SMPLXpca>;
 
 // Model config constexpr arrays
 namespace model_config {

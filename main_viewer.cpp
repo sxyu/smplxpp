@@ -1,7 +1,7 @@
 // Renders SMPL-X model in a OpenGL 3D viewer
 // 4 optional arguments:
 // 1. model type, default S
-//    options: S H X (SMPL SMPL-H SMPL-X)
+//    options: S H X P (SMPL; SMPL-H; SMPL-X; SMPL-X with pca)
 // 2. model gender, default NEUTRAL
 //    options: NEUTRAL MALE FEMALE (case insensitive)
 // 3. cpu or gpu. default gpu (i.e. use gpu where available)
@@ -141,7 +141,7 @@ _SMPLX_PROFILE(UPDATE);
         }
 
         if (ImGui::TreeNode("View")) {
-            if(ImGui::SliderFloat3("cor##CORSLIDER", viewer.camera.center_of_rot.data(), -5.f, 5.f))
+            if(ImGui::SliderFloat3("cen_of_rot", viewer.camera.center_of_rot.data(), -5.f, 5.f))
                 viewer.camera.update_view();
             if(ImGui::SliderFloat("radius", &viewer.camera.dist_to_center, 0.01f, 10.f))
                 viewer.camera.update_view();
@@ -176,5 +176,7 @@ int main(int argc, char** argv) {
         return run<model_config::SMPLH>(gender, force_cpu, pose_blends);
     } else if (std::toupper(argv[1][0]) == 'X') {
         return run<model_config::SMPLX>(gender, force_cpu, pose_blends);
+    } else if (std::toupper(argv[1][0]) == 'P') {
+        return run<model_config::SMPLXpca>(gender, force_cpu, pose_blends);
     }
 }

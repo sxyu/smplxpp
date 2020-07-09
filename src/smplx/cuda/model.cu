@@ -62,5 +62,6 @@ __host__ void Model<ModelConfig>::_cuda_free() {
 template class Model<model_config::SMPL>;
 template class Model<model_config::SMPLH>;
 template class Model<model_config::SMPLX>;
+template class Model<model_config::SMPLXpca>;
 
 }  // namespace smplx
