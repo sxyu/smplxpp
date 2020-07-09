@@ -11,7 +11,7 @@ if (POLICY CMP0072)
 endif (POLICY CMP0072)
 
 
-project( smpl_cpp )
+project( smplxpp )
 option( SMPLX_USE_FFAST_MATH "Enable ffast-math compiler flag, may cause numerical problems" ON )
 option( SMPLX_BUILD_VIEWER "Build OpenGL-based viewer" ON )
 option( SMPLX_USE_SYSTEM_EIGEN "Use system Eigen rather than the included Eigen submodule if available" OFF )
@@ -51,7 +51,7 @@ else()
     set(_SMPLX_CUDA_ENABLED_ "//")
 endif()
 
-set( PROJ_NAME "smpl_cpp" )
+set( PROJ_NAME "smplxpp" )
 set( MESHVIEW_NAME "meshview" )
 
 if ( CMAKE_COMPILER_IS_GNUCXX OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang") )
