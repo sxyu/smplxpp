@@ -62,6 +62,10 @@ elseif( MSVC )
     if( ${SMPLX_USE_FFAST_MATH} )
         set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:fast" )
     endif()
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /GLT")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
+	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT /GLT")
 endif ( )
 
 # Git submodule auto update
@@ -102,6 +106,9 @@ if ( SMPLX_CUDA_ENABLED )
     file(GLOB_RECURSE SOURCES_CUDA ${SRC_DIR}/smplx/cuda/*.cu)
     set (SOURCES ${SOURCES} ${SOURCES_CUDA})
 endif ( SMPLX_CUDA_ENABLED )
+
+# ensure M_PI, etc available
+add_definitions( -DGLEW_STATIC -D_USE_MATH_DEFINES )
 
 set( DEPENDENCIES )
 set( MESHVIEW_DEPENDENCIES )
@@ -198,26 +205,28 @@ if ( SMPLX_BUILD_VIEWER )
     install(TARGETS ${MESHVIEW_NAME} DESTINATION lib)
 
     add_executable( viewer main_viewer.cpp )
-    target_link_libraries( viewer ${PROJ_NAME} ${MESHVIEW_NAME} )
+    target_link_libraries( viewer ${MESHVIEW_NAME} ${PROJ_NAME} )
     set_target_properties( viewer PROPERTIES OUTPUT_NAME "smplx-viewer" )
     install(TARGETS viewer DESTINATION bin)
 
     add_executable( amass main_amass.cpp )
-    target_link_libraries( amass ${PROJ_NAME} ${MESHVIEW_NAME} )
+    target_link_libraries( amass ${MESHVIEW_NAME} ${PROJ_NAME} )
     set_target_properties( amass PROPERTIES OUTPUT_NAME "smplx-amass" )
     install(TARGETS amass DESTINATION bin)
 endif( SMPLX_BUILD_VIEWER )
 
 if ( MSVC )
-    set_property(TARGET ${PROJ_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG)
-    set_property(TARGET viewer APPEND PROPERTY LINK_FLAGS /DEBUG)
+    #set_property(TARGET ${PROJ_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG /LTCG /verbose:lib )
+    set_property(TARGET viewer APPEND PROPERTY LINK_FLAGS "/DEBUG /LTCG /verbose:lib" )
+	set_property(TARGET amass APPEND PROPERTY LINK_FLAGS "/DEBUG /LTCG /verbose:lib" )	
 endif ( MSVC )
 
 if(WIN32)
-    string(REPLACE "/MD" "/MT" CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
-    string(REPLACE "/MDd" "/MTd" CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-    string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-    string(REPLACE "/MDd" "/MTd" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    # string(REPLACE "/MD" "/MT" CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+    # string(REPLACE "/MDd" "/MTd" CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+    # string(REPLACE "/MD" "/MT" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+    # string(REPLACE "/MDd" "/MTd" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    add_definitions(-DNOMINMAX)
 elseif(CYGWIN)
 elseif(APPLE)
 elseif(UNIX)
@@ -231,9 +240,6 @@ elseif(UNIX)
     add_compile_options(-Wno-deprecated-declarations)
     add_compile_options(-Wno-unused-result)
 endif(WIN32)
-
-# ensure M_PI, etc available
-add_definitions( -DGLEW_STATIC -D_USE_MATH_DEFINES )
 
 # create version.hpp
 configure_file( version.hpp.in "${PROJECT_BINARY_DIR}/include/smplx/version.hpp" )
