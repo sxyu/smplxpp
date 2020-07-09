@@ -1,3 +1,4 @@
+// Very basic example:
 // Writes SMPL-X model to out.obj
 // 1 optional argument: SMPL-X model gender, default NEUTRAL
 // options: NEUTRAL MALE FEMALE (case insensitive)
@@ -6,8 +7,11 @@
 #include "smplx/util.hpp"
 #include <iostream>
 int main(int argc, char** argv) {
-    smplx::ModelS model(smplx::util::parse_gender(argc > 1 ? argv[1] : "NEUTRAL"));
-    smplx::BodyS body(model);
+    smplx::ModelX model(smplx::util::parse_gender(argc > 1 ? argv[1] : "NEUTRAL"));
+    smplx::BodyX body(model);
+    // X axis rotation of r-knee
+    body.pose()(3 * /*r knee*/5) = 0.5f;
+    // See include/smplx/model_config.hpp for joint names
     srand(time(NULL));
     _SMPLX_BEGIN_PROFILE;
     body.update();

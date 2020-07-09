@@ -10,6 +10,14 @@
 
 namespace meshview {
 
+namespace input {
+// Key/button action
+enum class Action {
+    release, press, repeat
+};
+}  // namespace input
+
+// MeshView OpenGL 3D viewer
 class Viewer {
 public:
     Viewer();
@@ -25,6 +33,10 @@ public:
     // Shorthand for adding point_cloud (to Viewer::point_clouds)
     PointCloud& add(PointCloud&& mesh);
     PointCloud& add(const PointCloud& mesh);
+    // Add a line (PointCloud with line)
+    PointCloud& add_line(const Eigen::Ref<const Vector3f>& a,
+                         const Eigen::Ref<const Vector3f>& b,
+                         const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 1.f, 1.f));
 
     // * The meshes
     std::vector<Mesh> meshes;
@@ -45,10 +57,16 @@ public:
     Camera camera;
 
     // * Render params
+    // Axes? (a)
+    bool draw_axes = true;
     // Wireframe mode? (w)
     bool wireframe = false;
     // Backface culling? (c)
     bool cull_face = true;
+    // Whether to wait for event on loop
+    // true: loops on user input (glfwWaitEvents), saves power and computation
+    // false: loops continuously (glfwPollEvents), useful for e.g. animation
+    bool loop_wait_events = true;
 
     // * Aesthetics
     // Window title, updated on show() calls only (i.e. please set before show())
@@ -70,13 +88,11 @@ public:
     // - else, called after loop_callback
     std::function<void()> on_gui;
     // Called on key up/down/repeat: args (key, action, mods), return false to prevent default
-    // see https://www.glfw.org/docs/3.3/group__input.html for info on action
     // see https://www.glfw.org/docs/3.3/group__mods.html on mods
-    std::function<bool(int, int, int)> on_key;
+    std::function<bool(int, input::Action, int)> on_key;
     // Called on mouse up/down/repeat: args (button, action, mods), return false to prevent default
-    // see https://www.glfw.org/docs/3.3/group__input.html for info on button
     // see https://www.glfw.org/docs/3.3/group__mods.html on mods
-    std::function<bool(int, int, int)> on_mouse_button;
+    std::function<bool(int, input::Action, int)> on_mouse_button;
     // Called on mouse move: args(x, y) return false to prevent default
     std::function<bool(double, double)> on_mouse_move;
     // Called on mouse scroll: args(xoffset, yoffset) return false to prevent default

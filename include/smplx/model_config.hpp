@@ -28,7 +28,7 @@ struct ModelConfigBase {
 };
 }  // namespace internal
 
-struct SMPLX : internal::ModelConfigBase<SMPLX> {
+struct SMPLX : public internal::ModelConfigBase<SMPLX> {
     static constexpr size_t n_verts() { return 10475; }
     static constexpr size_t n_faces() { return 20908; }
     static constexpr size_t n_explicit_joints() { return 25; } // 3 facial joints
@@ -42,7 +42,7 @@ struct SMPLX : internal::ModelConfigBase<SMPLX> {
     static constexpr const char* default_uv_path = "models/smplx/uv.txt";
 };
 
-struct SMPLH : internal::ModelConfigBase<SMPLH> {
+struct SMPLH : public internal::ModelConfigBase<SMPLH> {
     static constexpr size_t n_verts() { return 6890; }
     static constexpr size_t n_faces() { return 13776; }
     static constexpr size_t n_explicit_joints() { return 52; } // No hands in body, no face
@@ -51,10 +51,10 @@ struct SMPLH : internal::ModelConfigBase<SMPLH> {
     static constexpr const char* joint_name[] = { "pelvis", "left_hip", "right_hip", "spine1", "left_knee", "right_knee", "spine2", "left_ankle", "right_ankle", "spine3", "left_foot", "right_foot", "neck", "left_collar", "right_collar", "head", "left_shoulder", "right_shoulder", "left_elbow", "right_elbow", "left_wrist", "right_wrist", "left_index1", "left_index2", "left_index3", "left_middle1", "left_middle2", "left_middle3", "left_pinky1", "left_pinky2", "left_pinky3", "left_ring1", "left_ring2", "left_ring3", "left_thumb1", "left_thumb2", "left_thumb3", "right_index1", "right_index2", "right_index3", "right_middle1", "right_middle2", "right_middle3", "right_pinky1", "right_pinky2", "right_pinky3", "right_ring1", "right_ring2", "right_ring3", "right_thumb1", "right_thumb2", "right_thumb3" };
     static constexpr const char* model_name = "SMPL+H";
     static constexpr const char* default_path_prefix = "models/smplh/SMPLH_";
-    static constexpr const char* default_uv_path = ""; // Not available
+    static constexpr const char* default_uv_path = "models/smplh/uv.txt"; // Not available
 };
 
-struct SMPL : internal::ModelConfigBase<SMPL> {
+struct SMPL : public internal::ModelConfigBase<SMPL> {
     static constexpr size_t n_verts() { return 6890; }
     static constexpr size_t n_faces() { return 13776; }
     static constexpr size_t n_explicit_joints() { return 24; }

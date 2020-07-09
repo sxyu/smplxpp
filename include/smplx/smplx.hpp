@@ -30,7 +30,7 @@ struct GPUSparseMatrix {
 template<class ModelConfig>
 class Model {
 public:
-    // Construct from .npz at default path, with given gender
+    // Construct from .npz at default path for given gender
     explicit Model(Gender gender = Gender::neutral);
 
     // Construct from .npz at path (standard SMPL-X npz format)
@@ -41,6 +41,20 @@ public:
                    const std::string& uv_path = "",
                    Gender gender = Gender::unknown);
     ~Model();
+
+    // Load from .npz at default path for given gender
+    // useful for dynamically switching genders
+    void load(Gender gender = Gender::neutral);
+    // Load from .npz at path (standard SMPL-X npz format)
+    // path: .npz model path, in data/models/smplx/*.npz
+    // uv_path: UV map information path, see data/models/smplx/uv.txt for an example
+    // gender: records gender of model. For informational purposes only.
+    void load(const std::string& path,
+                   const std::string& uv_path = "",
+                   Gender new_gender = Gender::unknown);
+
+    Model& operator=(const Model& other) =delete;
+    Model& operator=(Model&& other) =delete;
 
     // Returns true if has UV map
     inline bool has_uv_map() const { return n_uv_verts > 0; }
@@ -193,8 +207,8 @@ public:
     // Set parameters to zero
     inline void set_zero() { params.setZero(); }
 
-    // Set parameters uar in [-1, 1]
-    inline void set_random() { params.setRandom(); }
+    // Set parameters uar in [-0.25, 0.25]
+    inline void set_random() { params.setRandom() * 0.25; }
 
     // The SMPL model used
     const Model<ModelConfig>& model;

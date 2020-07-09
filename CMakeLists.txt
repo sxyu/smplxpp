@@ -29,7 +29,7 @@ set( ZLIB_DIR "${VENDOR_DIR}/zlib" )
 set( EIGEN_DIR "${VENDOR_DIR}/eigen" )
 
 set( CMAKE_CXX_STACK_SIZE "10000000" )
-set( CMAKE_CXX_STANDARD 14 )
+set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON)
 set( CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake_modules" )
 
@@ -104,16 +104,17 @@ if ( SMPLX_CUDA_ENABLED )
 endif ( SMPLX_CUDA_ENABLED )
 
 set( DEPENDENCIES )
+set( MESHVIEW_DEPENDENCIES )
 
 #OpenMP
-find_package(OpenMP QUIET)
-if (OPENMP_FOUND)
-    message(STATUS "Using OpenMP for parallelization")
-    set( DEPENDENCIES ${DEPENDENCIES} OpenMP::OpenMP_CXX )
-    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp" )
-else()
-    message(STATUS "OpenMP not found, CPU performance may suffer")
-endif()
+# find_package(OpenMP QUIET)
+# if (OPENMP_FOUND)
+#     message(STATUS "Using OpenMP for parallelization")
+#     set( DEPENDENCIES ${DEPENDENCIES} OpenMP::OpenMP_CXX )
+#     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp" )
+# else()
+#     message(STATUS "OpenMP not found, CPU performance may suffer")
+# endif()
 
 include_directories(
     ${INCLUDE_DIR}
@@ -140,7 +141,7 @@ if (SMPLX_BUILD_VIEWER)
 
     # OpenGL
     find_package(OpenGL REQUIRED)
-    set( DEPENDENCIES OpenGL::GL glfw)
+    set( MESHVIEW_DEPENDENCIES ${MESHVIEW_DEPENDENCIES} OpenGL::GL glfw)
 endif(SMPLX_BUILD_VIEWER)
 
 # Eigen
@@ -149,6 +150,7 @@ if ( SMPLX_USE_SYSTEM_EIGEN )
     if (TARGET Eigen3::Eigen)
         message(STATUS "Using system Eigen")
         set (DEPENDENCIES ${DEPENDENCIES} Eigen3::Eigen)
+        set (MESHVIEW_DEPENDENCIES ${MESHVIEW_DEPENDENCIES} Eigen3::Eigen)
     else()
         message(STATUS "System Eigen > 3.3.90 not found, using vendor Eigen")
         include_directories(${EIGEN_DIR})
@@ -184,22 +186,26 @@ if (SMPLX_USE_CUDA)
 endif()
 
 add_executable( example main_example.cpp )
-target_link_libraries( example ${DEPENDENCIES} ${PROJ_NAME} )
+target_link_libraries( example ${PROJ_NAME} )
 set_target_properties( example PROPERTIES OUTPUT_NAME "smplx-example" )
 install(TARGETS example DESTINATION bin)
 
 if ( SMPLX_BUILD_VIEWER )
     add_library( ${MESHVIEW_NAME} STATIC ${MESHVIEW_SOURCES} ${IMGUI_SOURCES}
             ${MESHVIEW_VENDOR_SOURCES} )
+    target_link_libraries( ${MESHVIEW_NAME} ${MESHVIEW_DEPENDENCIES} )
     set_target_properties( ${MESHVIEW_NAME} PROPERTIES OUTPUT_NAME "meshview" )
-    target_link_libraries( ${MESHVIEW_NAME} ${DEPENDENCIES} )
     install(TARGETS ${MESHVIEW_NAME} DESTINATION lib)
 
     add_executable( viewer main_viewer.cpp )
-    target_link_libraries( viewer ${DEPENDENCIES} ${PROJ_NAME} ${MESHVIEW_NAME} )
+    target_link_libraries( viewer ${PROJ_NAME} ${MESHVIEW_NAME} )
     set_target_properties( viewer PROPERTIES OUTPUT_NAME "smplx-viewer" )
-
     install(TARGETS viewer DESTINATION bin)
+
+    add_executable( amass main_amass.cpp )
+    target_link_libraries( amass ${PROJ_NAME} ${MESHVIEW_NAME} )
+    set_target_properties( amass PROPERTIES OUTPUT_NAME "smplx-amass" )
+    install(TARGETS amass DESTINATION bin)
 endif( SMPLX_BUILD_VIEWER )
 
 if ( MSVC )

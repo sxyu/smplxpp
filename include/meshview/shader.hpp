@@ -4,7 +4,6 @@
 
 #include <string>
 #include <cstdint>
-#include <Eigen/Core>
 
 #include "common.hpp"
 

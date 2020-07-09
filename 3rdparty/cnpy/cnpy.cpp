@@ -147,9 +147,13 @@ void cnpy::parse_npy_header(FILE* fp, size_t& word_size, std::vector<size_t>& sh
     //char type = header[loc1+1];
     //assert(type == map_type(T));
 
+    char fmt = header[loc1 + 1];
     std::string str_ws = header.substr(loc1+2);
     loc2 = str_ws.find("'");
     word_size = atoi(str_ws.substr(0,loc2).c_str());
+
+    // MODIFIED: fix unicode string
+    if (fmt == 'U') word_size *= 4;
 }
 
 void cnpy::parse_zip_footer(FILE* fp, uint16_t& nrecs, size_t& global_header_size, size_t& global_header_offset)
@@ -182,7 +186,7 @@ cnpy::NpyArray load_the_npy_file(FILE* fp) {
     cnpy::parse_npy_header(fp,word_size,shape,fortran_order);
 
     cnpy::NpyArray arr(shape, word_size, fortran_order);
-    size_t nread = fread(arr.data<char>(),1,arr.num_bytes(),fp);
+    size_t nread = fread(arr.data<char>(), 1, arr.num_bytes(),fp);
     if(nread != arr.num_bytes())
         throw std::runtime_error("load_the_npy_file: failed fread");
     return arr;
@@ -253,7 +257,7 @@ cnpy::npz_t cnpy::npz_load(const std::string& fname) {
             throw std::runtime_error("npz_load: failed fread");
 
         //erase the lagging .npy
-        varname.erase(varname.end()-4,varname.end());
+        varname.resize(varname.size() - 4);
 
         //read in the extra field
         uint16_t extra_field_len = *(uint16_t*) &local_header[28];

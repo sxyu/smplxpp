@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "smplx/util.hpp"
+#include "smplx/util_cnpy.hpp"
 
 namespace smplx {
 namespace util {
@@ -58,7 +59,7 @@ std::string find_data_file(const std::string& data_path) {
     return data_dir_saved + data_path;
 }
 
-Eigen::Vector3f color_from_int(size_t color_index) {
+Eigen::Vector3f auto_color(size_t color_index) {
     static const Eigen::Vector3f palette[] = {
         Eigen::Vector3f{1.f, 0.2f, 0.3f},   Eigen::Vector3f{0.3f, 0.2f, 1.f},
         Eigen::Vector3f{0.3f, 1.2f, 0.2f},  Eigen::Vector3f{0.8f, 0.2f, 1.f},
@@ -70,6 +71,85 @@ Eigen::Vector3f color_from_int(size_t color_index) {
         Eigen::Vector3f{0.f, 1.0f, 0.8f},   Eigen::Vector3f{0.9f, 0.7f, 0.9f},
     };
     return palette[color_index % (sizeof palette / sizeof palette[0])];
+}
+
+Points auto_color_table(size_t num_colors) {
+    Points colors(num_colors, 3);
+    for (size_t i = 0; i < num_colors; ++i) {
+        colors.row(i) = util::auto_color(i).transpose();
+    }
+    return colors;
+}
+
+Matrix load_float_matrix(const cnpy::NpyArray& raw, size_t r, size_t c) {
+    size_t dwidth = raw.word_size;
+    _SMPLX_ASSERT(dwidth == 4 || dwidth == 8);
+    if (raw.fortran_order) {
+        if (dwidth == 4) {
+            return Eigen::template Map<const Eigen::Matrix<
+                float, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>>(
+                       raw.data<float>(), r, c)
+                .template cast<Scalar>();
+        } else {
+            return Eigen::template Map<const Eigen::Matrix<
+                double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>>(
+                       raw.data<double>(), r, c)
+                .template cast<Scalar>();
+        }
+    } else {
+        if (dwidth == 4) {
+            return Eigen::template Map<const Eigen::Matrix<
+                float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
+                       raw.data<float>(), r, c)
+                .template cast<Scalar>();
+        } else {
+            return Eigen::template Map<const Eigen::Matrix<
+                double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
+                       raw.data<double>(), r, c)
+                .template cast<Scalar>();
+        }
+    }
+}
+Eigen::Matrix<Index, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+load_uint_matrix(const cnpy::NpyArray& raw, size_t r, size_t c) {
+    size_t dwidth = raw.word_size;
+    _SMPLX_ASSERT(dwidth == 4 || dwidth == 8);
+    if (raw.fortran_order) {
+        if (dwidth == 4) {
+            return Eigen::template Map<const Eigen::Matrix<
+                uint32_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>>(
+                       raw.data<uint32_t>(), r, c)
+                .template cast<Index>();
+        } else {
+            return Eigen::template Map<const Eigen::Matrix<
+                uint64_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>>(
+                       raw.data<uint64_t>(), r, c)
+                .template cast<Index>();
+        }
+    } else {
+        if (dwidth == 4) {
+            return Eigen::template Map<const Eigen::Matrix<
+                uint32_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
+                       raw.data<uint32_t>(), r, c)
+                .template cast<Index>();
+        } else {
+            return Eigen::template Map<const Eigen::Matrix<
+                uint64_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
+                       raw.data<uint64_t>(), r, c)
+                .template cast<Index>();
+        }
+    }
+}
+
+void assert_shape(const cnpy::NpyArray& m,
+                  std::initializer_list<size_t> shape) {
+    _SMPLX_ASSERT_EQ(m.shape.size(), shape.size());
+    size_t idx = 0;
+    for (auto& dim : shape) {
+        if (dim != ANY_SHAPE)
+            _SMPLX_ASSERT_EQ(m.shape[idx], dim);
+        ++idx;
+    }
 }
 
 }  // namespace util

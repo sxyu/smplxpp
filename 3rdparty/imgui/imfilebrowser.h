@@ -433,7 +433,7 @@ inline void ImGui::FileBrowser::Display()
 
             const bool selected = selectedFilename_ == rsc.name;
             if (rsc.isDir) {
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.15f, 0.31f, 0.82f, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.15f, 0.51f, 1.0, 1.0f));
             }
             if(Selectable(rsc.showName.c_str(), selected,
                           ImGuiSelectableFlags_DontClosePopups))

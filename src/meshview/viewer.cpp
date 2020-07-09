@@ -23,7 +23,7 @@ void win_key_callback(GLFWwindow* window, int key, int scancode, int action, int
 
     meshview::Viewer& viewer = *reinterpret_cast<meshview::Viewer*>(
             glfwGetWindowUserPointer(window));
-    if(viewer.on_key && !viewer.on_key(key, action, mods)) return;
+    if(viewer.on_key && !viewer.on_key(key, (meshview::input::Action)action, mods)) return;
 
 #ifdef MESHVIEW_IMGUI
     ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
@@ -36,14 +36,11 @@ void win_key_callback(GLFWwindow* window, int key, int scancode, int action, int
                 glfwSetWindowShouldClose(window, GL_TRUE); break;
             case 'Z': viewer.camera.reset_view(); break;
             case 'W':
-                      viewer.wireframe = !viewer.wireframe;
-                      glPolygonMode(GL_FRONT_AND_BACK, viewer.wireframe ? GL_LINE : GL_FILL);
-                      break;
+                      viewer.wireframe = !viewer.wireframe; break;
             case 'C':
-                      viewer.cull_face = !viewer.cull_face;
-                      if (viewer.cull_face) glEnable(GL_CULL_FACE);
-                      else glDisable(GL_CULL_FACE);
-                      break;
+                      viewer.cull_face = !viewer.cull_face; break;
+            case 'A':
+                      viewer.draw_axes = !viewer.draw_axes; break;
             case 'M':
                       if (glfwGetWindowAttrib(window, GLFW_MAXIMIZED) == GLFW_TRUE) {
                           glfwRestoreWindow(window);
@@ -78,6 +75,7 @@ shift + left click + drag: pan view
 middle click + drag:       pan view (alt)
 ctrl + left click + drag:  roll view
 Z:                         reset view
+A:                         toggle axes
 W:                         toggle wireframe
 C:                         toggle backface culling
 M:                         toggle maximize window (may not work on some systems)
@@ -96,7 +94,7 @@ void win_mouse_button_callback(GLFWwindow* window, int button, int action, int m
 
     if (action == GLFW_RELEASE) viewer._mouse_button = -1;
     if (viewer.on_mouse_button &&
-            !viewer.on_mouse_button(button, action, mods)) {
+            !viewer.on_mouse_button(button, (meshview::input::Action)action, mods)) {
         return;
     }
 #ifdef MESHVIEW_IMGUI
@@ -158,6 +156,25 @@ void win_framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     viewer.camera.update_proj();
     glViewport(0, 0, width, height);
 }
+
+// Axes data
+const float AXIS_LEN = 0.5f;
+const float axes_verts[] =  {
+     0.0f, 0.0f, 0.0f,
+     AXIS_LEN, 0.0f, 0.0f,
+     0.0f, 0.0f, 0.0f,
+     0.0f, AXIS_LEN, 0.0f,
+     0.0f, 0.0f, 0.0f,
+     0.0f, 0.0f, AXIS_LEN
+};
+const float axes_rgb[] =  {
+    1.0f, 0.0f, 0.0f,
+    1.0f, 0.0f, 0.0f,
+    0.0f, 1.0f, 0.0f,
+    0.0f, 1.0f, 0.0f,
+    0.0f, 0.0f, 1.0f,
+    0.0f, 0.0f, 1.0f
+};
 }  // namespace
 
 namespace meshview {
@@ -200,6 +217,7 @@ void Viewer::show() {
 
     camera.aspect = (float)_width / (float)_height;
     camera.update_proj();
+    camera.update_view();
 
     glfwMakeContextCurrent(window);
 
@@ -228,10 +246,15 @@ void Viewer::show() {
     glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
 #endif
 
-
     // Compile shaders
     Shader shader_mesh(MESH_VERTEX_SHADER, MESH_FRAGMENT_SHADER);
     Shader shader_pc(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER);
+
+    // Construct axes object
+    PointCloud axes(Eigen::template Map<const Points>{axes_verts, 6, 3},
+                    Eigen::template Map<const Points>{axes_rgb, 6, 3});
+    axes.draw_lines();
+    axes.update(true);
 
     // Events
     glfwSetKeyCallback(window, win_key_callback);
@@ -255,6 +278,18 @@ void Viewer::show() {
     while (!glfwWindowShouldClose(window)) {
         glClearColor(background[0], background[1], background[2], 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
+        if (cull_face)
+            glEnable(GL_CULL_FACE);
+        else
+            glDisable(GL_CULL_FACE);
+        axes.enable(draw_axes);
+
+        shader_pc.use();
+        axes.draw(shader_pc, camera);
+        for (auto& pc : point_clouds) {
+            pc.draw(shader_pc, camera);
+        }
 
         shader_mesh.use();
         shader_mesh.set_vec3("light.ambient", ambient_light_color);
@@ -265,11 +300,6 @@ void Viewer::show() {
         shader_mesh.set_vec3("viewPos", camera.get_pos());
         for (auto& mesh : meshes) {
             mesh.draw(shader_mesh, camera);
-        }
-
-        shader_pc.use();
-        for (auto& pc : point_clouds) {
-            pc.draw(shader_pc, camera);
         }
 
         if (on_loop) on_loop();
@@ -292,7 +322,11 @@ void Viewer::show() {
 #endif
 
         glfwSwapBuffers(window);
-        glfwWaitEvents();
+        if (loop_wait_events) {
+            glfwWaitEvents();
+        } else {
+            glfwPollEvents();
+        }
     }
 
     if (on_close) on_close();
@@ -326,6 +360,11 @@ PointCloud& Viewer::add(PointCloud&& point_cloud) {
 PointCloud& Viewer::add(const PointCloud& point_cloud) {
     point_clouds.push_back(point_cloud);
     return point_clouds.back();
+}
+PointCloud& Viewer::add_line(const Eigen::Ref<const Vector3f>& a,
+                     const Eigen::Ref<const Vector3f>& b,
+                     const Eigen::Ref<const Vector3f>& color) {
+    return add(PointCloud::Line(a, b, color));
 }
 
 

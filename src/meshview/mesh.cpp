@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <GL/glew.h>
-#include "stb_image.h"
 #include <Eigen/Geometry>
 
 #include "meshview/util.hpp"
@@ -22,59 +21,6 @@ void shader_set_transform_matrices(
 
 }  // namespace
 
-// *** Texture ***
-Texture::Texture(const std::string& path, bool flip, int type)
-    : type(type), path(path), fallback_color(/*pink*/ 1.f, 0.75f, 0.8f), flip(flip) {
-}
-
-Texture::Texture(const Eigen::Ref<const Vector3f>& color, int type) :
-    type(type), fallback_color(color) {
-}
-
-Texture::~Texture() {
-    if (~id) glDeleteTextures(1, &id);
-}
-
-void Texture::load() {
-    glGenTextures(1, &id);
-    glBindTexture(GL_TEXTURE_2D, id);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    bool success = false;
-    if (path.size()) {
-        stbi_set_flip_vertically_on_load(flip);
-        int width, height, nrChannels;
-        unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
-        if (data) {
-            GLenum format;
-            if (nrChannels == 1)
-                format = GL_RED;
-            else if (nrChannels == 3)
-                format = GL_RGB;
-            else if (nrChannels == 4)
-                format = GL_RGBA;
-
-            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height,
-                    0, format, GL_UNSIGNED_BYTE, data);
-
-            glGenerateMipmap(GL_TEXTURE_2D);
-            stbi_image_free(data);
-            success = true;
-        } else {
-            std::cerr << "Failed to load texture " << path << ", using fallback color\n";
-        }
-    }
-    if (!success) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1,
-                0, GL_RGB, GL_FLOAT, fallback_color.data());
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-}
-
 // *** Mesh ***
 Mesh::Mesh(size_t num_verts, size_t num_triangles) : num_verts(num_verts),
     num_triangles(num_triangles), VAO((Index)-1) {
@@ -83,6 +29,47 @@ Mesh::Mesh(size_t num_verts, size_t num_triangles) : num_verts(num_verts),
         faces.resize(num_triangles, faces.ColsAtCompileTime);
     }
     transform.setIdentity();
+}
+
+Mesh::Mesh(const Eigen::Ref<const Points>& pos,
+           const Eigen::Ref<const Triangles>& tri_faces,
+           const Eigen::Ref<const Points2D>& uv,
+           const Eigen::Ref<const Points>& normals)
+            : Mesh(pos.rows(), tri_faces.rows()) {
+    if (!pos.rows() ||
+        (normals.rows() && pos.rows() != normals.rows()) ||
+        (uv.rows() && pos.rows() != uv.rows())) {
+        std::cerr << "Invalid meshview::Mesh construction: "
+            "pos cannot be empty, and pos, uv, normals should have identical # rows\n";
+        return;
+    }
+
+    verts_pos().noalias() = pos;
+    if (~num_triangles && tri_faces.rows())
+        faces.noalias() = tri_faces;
+    if (uv.rows())
+        verts_uv().noalias() = uv;
+    if (normals.rows())
+        verts_norm().noalias() = normals;
+}
+
+Mesh::Mesh(const Eigen::Ref<const Points>& pos,
+           const Eigen::Ref<const Points2D>& uv,
+           const Eigen::Ref<const Points>& normals)
+            : Mesh(pos.rows(), (size_t)-1) {
+    if (!pos.rows() ||
+        (normals.rows() && pos.rows() != normals.rows()) ||
+        (uv.rows() && pos.rows() != uv.rows())) {
+        std::cerr << "Invalid meshview::Mesh construction: "
+            "pos cannot be empty, and pos, uv, normals should have identical # rows\n";
+        return;
+    }
+
+    verts_pos().noalias() = pos;
+    if (uv.rows())
+        verts_uv().noalias() = uv;
+    if (normals.rows())
+        verts_norm().noalias() = normals;
 }
 
 Mesh::~Mesh() { free_bufs(); }
@@ -321,6 +308,23 @@ PointCloud::PointCloud(size_t num_verts) : num_verts(num_verts), VAO((Index)-1) 
     verts.resize(num_verts, verts.ColsAtCompileTime);
     transform.setIdentity();
 }
+PointCloud::PointCloud(const Eigen::Ref<const Points>& pos,
+                       const Eigen::Ref<const Points>& rgb) : PointCloud(pos.rows()) {
+    if (!pos.rows() || (rgb.rows() && pos.rows() != rgb.rows())) {
+        std::cerr << "Invalid meshview::PointCloud construction: "
+            "pos cannot be empty and pos, rgb should have identical # rows\n";
+        return;
+    }
+    verts_pos().noalias() = pos;
+    if (rgb.rows()) {
+        verts_rgb().noalias() = rgb;
+    }
+}
+PointCloud::PointCloud(const Eigen::Ref<const Points>& pos,
+        float r, float g, float b) : PointCloud(pos.rows()) {
+    verts_pos().noalias() = pos;
+    verts_rgb().rowwise() = Eigen::RowVector3f(r, g, b);
+}
 PointCloud::~PointCloud() { free_bufs(); }
 
 void PointCloud::update(bool force_init) {
@@ -376,7 +380,7 @@ void PointCloud::draw(const Shader& shader, const Camera& camera) {
 
     // Draw mesh
     glBindVertexArray(VAO);
-    glDrawArrays(GL_POINTS, 0, num_verts);
+    glDrawArrays(lines ? GL_LINES : GL_POINTS, 0, num_verts);
     glBindVertexArray(0);
 
     // Always good practice to set everything back to defaults once configured.
@@ -386,6 +390,17 @@ void PointCloud::draw(const Shader& shader, const Camera& camera) {
 void PointCloud::free_bufs() {
     if (~VAO) glDeleteVertexArrays(1, &VAO);
     if (~VBO) glDeleteBuffers(1, &VBO);
+}
+
+PointCloud PointCloud::Line(const Eigen::Ref<const Vector3f>& a,
+                       const Eigen::Ref<const Vector3f>& b,
+                       const Eigen::Ref<const Vector3f>& color) {
+    PointCloud tmp(2);
+    tmp.verts_pos().topRows<1>().noalias() = a;
+    tmp.verts_pos().bottomRows<1>().noalias() = b;
+    tmp.verts_rgb().rowwise() = color.transpose();
+    tmp.draw_lines();
+    return tmp;
 }
 
 // *** Shared ***
@@ -398,7 +413,7 @@ BOTH_MESH_AND_POINTCLOUD(translate(const Eigen::Ref<const Vector3f>& vec) {
 })
 
 BOTH_MESH_AND_POINTCLOUD(rotate(const Eigen::Ref<const Matrix3f>& mat) {
-    (transform.topLeftCorner<3, 3>() = mat * transform.topRightCorner<3, 3>());
+    (transform.topLeftCorner<3, 3>() = mat * transform.topLeftCorner<3, 3>());
     return *this;
 })
 
@@ -416,5 +431,7 @@ BOTH_MESH_AND_POINTCLOUD(set_transform(const Eigen::Ref<const Matrix4f>& mat) {
     transform = mat;
     return *this;
 })
+
+BOTH_MESH_AND_POINTCLOUD(enable(bool val) { enabled = val; return *this; })
 
 }  // namespace meshview

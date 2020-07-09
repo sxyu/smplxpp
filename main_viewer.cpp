@@ -1,10 +1,12 @@
 // Renders SMPL-X model in a OpenGL 3D viewer
-// 2 optional arguments:
+// 4 optional arguments:
 // 1. model type, default S
 //    options: S H X (SMPL SMPL-H SMPL-X)
 // 2. model gender, default NEUTRAL
 //    options: NEUTRAL MALE FEMALE (case insensitive)
-// Will load data/models/smplx/SMPLX_[arg].npz;
+// 3. cpu or gpu. default gpu (i.e. use gpu where available)
+// 3. whether to enable pose blendshapes. on or off. default on
+//    note pose blendshapes are very slow.
 #include <iostream>
 #include <algorithm>
 
@@ -18,56 +20,43 @@
 using namespace smplx;
 
 template<class ModelConfig>
-static int run(Gender gender) {
+static int run(Gender gender, bool force_cpu, bool pose_blends) {
     // * Construct SMPL body model
     Model<ModelConfig> model(gender);
     Body<ModelConfig> body(model);
     {
 _SMPLX_BEGIN_PROFILE;
-    body.update();
+    body.update(force_cpu, pose_blends);
 _SMPLX_PROFILE(UPDATE);
     }
 
     // * Set up meshview viewer
     meshview::Viewer viewer;
-    // viewer.add(meshview::Mesh::Cube(0.5f)).translate(Eigen::Vector3f(0.f, -1.8f, 0.f))
-    //     .set_shininess(32.f)
-    //     .add_texture<meshview::Texture::TYPE_DIFFUSE>(
-    //             util::find_data_file("tex/container2.png"))
-    //     .add_texture<meshview::Texture::TYPE_SPECULAR>(
-    //             util::find_data_file("tex/container2_specular.png"))
-    //     ;
+    viewer.draw_axes = false; // Press a to see axes
 
-    {
-        meshview::Mesh tmp_mesh(ModelConfig::n_verts(), ModelConfig::n_faces());
-        tmp_mesh.verts_pos() = body.verts();
-        tmp_mesh.faces = model.faces;
-        viewer.add(std::move(tmp_mesh)).estimate_normals().set_shininess(4.f)
-            .add_texture_solid<>(1.f, 0.7f, 0.8f)
-            .add_texture_solid<meshview::Texture::TYPE_SPECULAR>(0.1f, 0.1f, 0.1f);
-    }
-    {
-        meshview::PointCloud tmp_pc(ModelConfig::n_verts());
-        Points colors(model.n_joints(), 3);
-        for (size_t i = 0; i < model.n_joints(); ++i) {
-            colors.row(i) = util::color_from_int(i).transpose();
-        }
-        tmp_pc.verts_pos().noalias() = body.verts();
-        tmp_pc.verts_rgb().noalias() = model.weights * colors;
-        viewer.add(std::move(tmp_pc)).translate(Eigen::Vector3f(2.f, 0.f, 0.f));
-    }
+    // Main body model
+    viewer.add(meshview::Mesh(body.verts(), model.faces))
+        .estimate_normals().set_shininess(4.f)
+        .add_texture_solid<>(1.f, 0.7f, 0.8f)
+        .add_texture_solid<meshview::Texture::TYPE_SPECULAR>(0.1f, 0.1f, 0.1f)
+        .translate(Eigen::Vector3f(0.f, 0.f, 0.f));
+
+    // LBS weights visualization
+    viewer.add(meshview::PointCloud(body.verts(), model.weights
+                * util::auto_color_table(model.n_joints())))
+        .translate(Eigen::Vector3f(2.0f, 0.f, 0.f));
 
     auto& smpl_mesh = viewer.meshes.back();
     auto& smpl_pc = viewer.point_clouds.back();
 
-    auto update = [&model, &body, &smpl_mesh, &smpl_pc, &viewer]() {
-_SMPLX_BEGIN_PROFILE;
-        body.update();
-_SMPLX_PROFILE(UPDATE);
-        smpl_mesh.verts_pos() = body.verts();
-        smpl_mesh.faces = model.faces;
+    auto update = [&]() {
+        body.update(force_cpu, pose_blends);
+        smpl_mesh.verts_pos().noalias() = body.verts();
+        smpl_mesh.faces.noalias() = model.faces;
+        smpl_mesh.estimate_normals(); // Need to recompute normals
+        // Update the mesh on-the-fly (send to GPU)
         smpl_mesh.update();
-        smpl_pc.verts_pos() = body.verts();
+        smpl_pc.verts_pos().noalias() = body.verts();
         smpl_pc.update();
     };
 
@@ -154,7 +143,7 @@ _SMPLX_PROFILE(UPDATE);
         if (ImGui::TreeNode("View")) {
             if(ImGui::SliderFloat3("cor##CORSLIDER", viewer.camera.center_of_rot.data(), -5.f, 5.f))
                 viewer.camera.update_view();
-            if(ImGui::SliderFloat("radius", &viewer.camera.dist_to_center, 0.01f, 5.f))
+            if(ImGui::SliderFloat("radius", &viewer.camera.dist_to_center, 0.01f, 10.f))
                 viewer.camera.update_view();
             if(ImGui::DragFloat("yaw", &viewer.camera.yaw)) viewer.camera.update_view();
             if(ImGui::DragFloat("pitch", &viewer.camera.pitch)) viewer.camera.update_view();
@@ -179,11 +168,13 @@ _SMPLX_PROFILE(UPDATE);
 
 int main(int argc, char** argv) {
     Gender gender = util::parse_gender(argc > 2 ? argv[2] : "NEUTRAL");
+    bool force_cpu = argc > 3 ? (std::string(argv[3]) == "cpu") : false;
+    bool pose_blends = argc > 4 ? (std::string(argv[4]) != "off") : true;
     if (argc < 2 || std::toupper(argv[1][0]) == 'S') {
-        return run<model_config::SMPL>(gender);
+        return run<model_config::SMPL>(gender, force_cpu, pose_blends);
     } else if (std::toupper(argv[1][0]) == 'H') {
-        return run<model_config::SMPLH>(gender);
+        return run<model_config::SMPLH>(gender, force_cpu, pose_blends);
     } else if (std::toupper(argv[1][0]) == 'X') {
-        return run<model_config::SMPLX>(gender);
+        return run<model_config::SMPLX>(gender, force_cpu, pose_blends);
     }
 }

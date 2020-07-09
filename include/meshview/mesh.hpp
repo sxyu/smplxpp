@@ -2,68 +2,35 @@
 #ifndef VIEWER_MESH_5872C703_91C0_48F0_AB16_333F916F9FF4
 #define VIEWER_MESH_5872C703_91C0_48F0_AB16_333F916F9FF4
 
+// Contains definitions of Mesh, PointCloud, and Line
+
 #include <vector>
 #include <array>
 #include <string>
 #include <cstdint>
+#include <cstddef>
 
 #include "meshview/common.hpp"
+#include "meshview/texture.hpp"
 #include "meshview/shader.hpp"
 #include "meshview/camera.hpp"
 
 namespace meshview {
 
-// Represents a texture/material
-struct Texture {
-    // Texture types
-    enum {
-        TYPE_DIFFUSE,
-        TYPE_SPECULAR,
-        // TYPE_NORMAL,
-        // TYPE_HEIGHT,
-        __TYPE_COUNT
-    };
-    // Texture type names (TYPE_DIFFUSE -> "diffuse" etc)
-    static constexpr inline const char* type_to_name(int type) {
-        switch(type) {
-            case TYPE_SPECULAR: return "specular";
-            // case TYPE_NORMAL: return "normal";
-            // case TYPE_HEIGHT: return "height";
-            default: return "diffuse";
-        }
-    }
-
-    // Texture from path
-    Texture(const std::string& path, bool flip = true, int type = TYPE_DIFFUSE);
-    // Texture from solid color (1x1)
-    Texture(const Eigen::Ref<const Vector3f>& color, int type = TYPE_DIFFUSE);
-
-    ~Texture();
-
-    // Load texture; need to be called before first use in each context
-    // (called by Mesh::reset())
-    void load();
-
-    // GL texture id; -1 if unavailable
-    Index id = -1;
-
-    // File path (optional)
-    std::string path;
-
-    // Color to use if path empty OR failed to load the texture image
-    Vector3f fallback_color;
-
-    // Texture type
-    int type;
-
-    // Vertical flip on load?
-    bool flip;
-};
-
-// A mesh object with vertices (including uv, normals), triangular faces, and textures
+// Represents a triangle mesh with vertices (including uv, normals),
+// triangular faces, and textures
 class Mesh {
 public:
     explicit Mesh(size_t num_verts, size_t num_triangles = -1);
+    // Construct with given points and faces
+    explicit Mesh(const Eigen::Ref<const Points>& pos,
+                  const Eigen::Ref<const Triangles>& tri_faces,
+                  const Eigen::Ref<const Points2D>& uv = Points2D(),
+                  const Eigen::Ref<const Points>& normals = Points());
+    // Construct without EBO (triangles will be 0 1 2, 3 4 5 etc)
+    explicit Mesh(const Eigen::Ref<const Points>& pos,
+                  const Eigen::Ref<const Points2D>& uv = Points2D(),
+                  const Eigen::Ref<const Points>& normals = Points());
     ~Mesh();
 
     // Draw mesh to shader wrt camera
@@ -129,6 +96,9 @@ public:
     // Normal part of verts
     inline Eigen::Ref<Points> verts_norm() { return verts.rightCols<3>(); }
 
+    // Enable/disable object
+    Mesh& enable(bool val = true);
+
     // * Example meshes
     // Triangle
     static Mesh Triangle(const Eigen::Ref<const Vector3f>& a,
@@ -179,10 +149,19 @@ private:
     Index blank_tex_id = -1;
 };
 
-// A  object with vertices (including uv, normals), colors
+// Represents a 3D point cloud with vertices (including uv, normals)
+// where each vertex has a color.
+// Also supports drawing the points as a polyline (call draw_lines()).
 class PointCloud {
 public:
     explicit PointCloud(size_t num_verts);
+    // Set vertices with positions pos with colors rgb
+    explicit PointCloud(const Eigen::Ref<const Points>& pos,
+                        const Eigen::Ref<const Points>& rgb);
+    // Set all points to same color
+    // (can't put Eigen::Vector3f due 'ambiguity' with above)
+    explicit PointCloud(const Eigen::Ref<const Points>& pos,
+                        float r = 1.f, float g = 1.f, float b = 1.f);
     ~PointCloud();
 
     // Draw mesh to shader wrt camera
@@ -193,8 +172,12 @@ public:
     // RGB part of verts
     inline Eigen::Ref<Points> verts_rgb() { return verts.rightCols<3>(); }
 
+    // Enable/disable object
+    PointCloud& enable(bool val = true);
     // Set the point size for drawing
     inline PointCloud & set_point_size(float val) { point_size = val; return *this; }
+    // Draw polylines between consecutive points
+    inline PointCloud & draw_lines() { lines = true; return *this; }
 
     // Apply translation
     PointCloud& translate(const Eigen::Ref<const Vector3f>& vec);
@@ -212,10 +195,16 @@ public:
     // Init or update VAO/VBO buffers from current vertex data
     // Must called before first draw for each GLFW context to ensure
     // textures are reconstructed.
+    // force_init: INTERNAL, whether to force recreating buffers, DO NOT use this
     void update(bool force_init = false);
 
     // ADVANCED: Free buffers. Used automatically in destructor.
     void free_bufs();
+
+    // * Example point clouds/lines
+    static PointCloud Line(const Eigen::Ref<const Vector3f>& a,
+                           const Eigen::Ref<const Vector3f>& b,
+                           const Eigen::Ref<const Vector3f>& color = Vector3f(1.f, 1.f, 1.f));
 
     const size_t num_verts;
 
@@ -225,7 +214,11 @@ public:
     // Whether this point cloud is enabled; if false, does not draw anything
     bool enabled = true;
 
-    // Point size for drawing
+    // If true, draws polylines between vertices
+    // If false (default), draws points only
+    bool lines = false;
+
+    // Point size (if lines = false)
     float point_size = 1.f;
 
     // Model local transfom

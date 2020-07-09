@@ -1,6 +1,6 @@
 #pragma once
-#ifndef SMPL_UTIL_63B0803D_E0C7_4529_A796_9F6ED269E89F
-#define SMPL_UTIL_63B0803D_E0C7_4529_A796_9F6ED269E89F
+#ifndef SMPLX_UTIL_63B0803D_E0C7_4529_A796_9F6ED269E89F
+#define SMPLX_UTIL_63B0803D_E0C7_4529_A796_9F6ED269E89F
 #include "smplx/defs.hpp"
 
 #define _SMPLX_ASSERT(x) do { \
@@ -23,7 +23,6 @@
 #define _SMPLX_PROFILE(x) do{double _delta = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - start).count(); printf("%s: %f ms = %f fps\n", #x, _delta, 1e3f/_delta); start = std::chrono::high_resolution_clock::now(); }while(false)
 #define _SMPLX_PROFILE_STEPS(x,stp) do{printf("%s: %f ms / step\n", #x, std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - start).count()/(stp)); start = std::chrono::high_resolution_clock::now(); }while(false)
 
-#include<Eigen/Core>
 #include<Eigen/Geometry>
 
 namespace smplx {
@@ -86,9 +85,12 @@ inline void inv_homogeneous(const Eigen::Ref<const Eigen::Matrix<T, 3, 4, Option
 std::string find_data_file(const std::string& data_path);
 
 // Create color from integer
-Eigen::Vector3f color_from_int(size_t color_index);
+Eigen::Vector3f auto_color(size_t color_index);
+
+// Create table of num_colors colors, shape (num_colors, 3) row-major
+Points auto_color_table(size_t num_colors);
 
 }  // namespace util
 }  // namespace smpl
 
-#endif  // ifndef SMPL_UTIL_63B0803D_E0C7_4529_A796_9F6ED269E89F
+#endif  // ifndef SMPLX_UTIL_63B0803D_E0C7_4529_A796_9F6ED269E89F
