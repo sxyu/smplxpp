@@ -10,7 +10,6 @@ if (POLICY CMP0072)
     cmake_policy(SET CMP0072 NEW)
 endif (POLICY CMP0072)
 
-
 project( smplxpp )
 option( SMPLX_USE_FFAST_MATH "Enable ffast-math compiler flag, may cause numerical problems" ON )
 option( SMPLX_BUILD_VIEWER "Build OpenGL-based viewer" ON )
@@ -20,11 +19,8 @@ option( SMPLX_USE_CUDA "Use cuda if available" ON )
 set( INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include" )
 set( SRC_DIR "${PROJECT_SOURCE_DIR}/src" )
 set( VENDOR_DIR "${PROJECT_SOURCE_DIR}/3rdparty" )
+set( MESHVIEW_DIR "${VENDOR_DIR}/meshview" )
 set( CNPY_DIR "${VENDOR_DIR}/cnpy" )
-set( STB_DIR "${VENDOR_DIR}/stb" )
-set( IMGUI_DIR "${VENDOR_DIR}/imgui" )
-set( GLFW_DIR "${VENDOR_DIR}/glfw" )
-set( GLEW_DIR "${VENDOR_DIR}/glew" )
 set( ZLIB_DIR "${VENDOR_DIR}/zlib" )
 set( EIGEN_DIR "${VENDOR_DIR}/eigen" )
 
@@ -47,12 +43,11 @@ if (SMPLX_USE_CUDA AND CMAKE_CUDA_COMPILER)
     set( CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  -g -Xcudafe \"--display_error_number --diag_suppress=3057 --diag_suppress=3058 --diag_suppress=3059 --diag_suppress=3060\" -lineinfo")
 else()
     message(STATUS "CUDA disabled")
-	set(SMPLX_CUDA_ENABLED OFF)
+    set(SMPLX_CUDA_ENABLED OFF)
     set(_SMPLX_CUDA_ENABLED_ "//")
 endif()
 
 set( PROJ_NAME "smplxpp" )
-set( MESHVIEW_NAME "meshview" )
 
 if ( CMAKE_COMPILER_IS_GNUCXX OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang") )
     set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wno-deprecated-declarations -O3 -funroll-loops -g" )
@@ -64,12 +59,12 @@ elseif( MSVC )
         set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:fast" )
     endif()
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /GLT /Ox")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /GLT /Ox")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT /GLT")
-	if (SMPLX_USE_CUDA)
-		set( CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -Xcompiler=\"/MT\"" )
-	endif()
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT /GLT")
+    if (SMPLX_USE_CUDA)
+        set( CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -Xcompiler=\"/MT\"" )
+    endif()
     # Silence deprecation warning coming from Eigen; silence secure warning
     add_definitions(-D_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING -D_CRT_SECURE_NO_WARNINGS)
 endif ( )
@@ -81,32 +76,27 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     # Update submodules as needed
     option(GIT_SUBMODULE "Check submodules during build" ON)
     if(GIT_SUBMODULE)
-        message(STATUS "Submodule update")
+        message(STATUS "Running update --init --recursive")
         execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
             RESULT_VARIABLE GIT_SUBMOD_RESULT)
         if(NOT GIT_SUBMOD_RESULT EQUAL "0")
             message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
         endif()
+        message(STATUS "Submodule update done")
     endif()
 endif()
 
-if(NOT EXISTS "${GLFW_DIR}/CMakeLists.txt")
+if(NOT EXISTS "${MESHVIEW_DIR}/CMakeLists.txt")
    message(FATAL_ERROR "A submodule as not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
 file(GLOB_RECURSE SOURCES ${SRC_DIR}/smplx/*.cpp)
 file(GLOB_RECURSE HEADERS ${INCLUDE_DIR}/smplx/*.cpp)
-file(GLOB_RECURSE MESHVIEW_SOURCES ${SRC_DIR}/meshview/*.cpp)
-file(GLOB_RECURSE MESHVIEW_HEADERS ${INCLUDE_DIR}/meshview/*.cpp)
 
 file(GLOB IMGUI_SOURCES ${IMGUI_DIR}/*.cpp)
 
 set( VENDOR_SOURCES ${CNPY_DIR}/cnpy.cpp)
-set( MESHVIEW_VENDOR_SOURCES
-    ${STB_DIR}/stb_image.cpp
-    ${GLEW_DIR}/src/glew.c
-)
 
 if ( SMPLX_CUDA_ENABLED )
     file(GLOB_RECURSE SOURCES_CUDA ${SRC_DIR}/smplx/cuda/*.cu)
@@ -117,7 +107,6 @@ endif ( SMPLX_CUDA_ENABLED )
 add_definitions( -DGLEW_STATIC -D_USE_MATH_DEFINES )
 
 set( DEPENDENCIES )
-set( MESHVIEW_DEPENDENCIES )
 
 #OpenMP
 # find_package(OpenMP QUIET)
@@ -137,24 +126,10 @@ include_directories(
 )
 
 if (SMPLX_BUILD_VIEWER)
-    add_definitions( -DMESHVIEW_IMGUI )
     include_directories(
         ${STB_DIR}
         ${IMGUI_DIR}
-        ${GLEW_DIR}/include
-        ${GLFW_DIR}/include
     )
-
-    # Viewer dependencies
-    SET(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "GLFW example" FORCE)
-    SET(GLFW_BUILD_TESTS OFF CACHE BOOL "GLFW tests" FORCE)
-    SET(GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW docs" FORCE)
-    SET(GLFW_INSTALL OFF CACHE BOOL "GLFW install" FORCE)
-    add_subdirectory(${GLFW_DIR})
-
-    # OpenGL
-    find_package(OpenGL REQUIRED)
-    set( MESHVIEW_DEPENDENCIES ${MESHVIEW_DEPENDENCIES} OpenGL::GL glfw)
 endif(SMPLX_BUILD_VIEWER)
 
 # Eigen
@@ -163,7 +138,6 @@ if ( SMPLX_USE_SYSTEM_EIGEN )
     if (TARGET Eigen3::Eigen)
         message(STATUS "Using system Eigen")
         set (DEPENDENCIES ${DEPENDENCIES} Eigen3::Eigen)
-        set (MESHVIEW_DEPENDENCIES ${MESHVIEW_DEPENDENCIES} Eigen3::Eigen)
     else()
         message(STATUS "System Eigen > 3.3.90 not found, using vendor Eigen")
         include_directories(${EIGEN_DIR})
@@ -185,6 +159,10 @@ else()
     set( DEPENDENCIES ${DEPENDENCIES} zlibstatic )
 endif()
 
+SET(MESHVIEW_BUILD_EXAMPLE OFF CACHE BOOL "meshview example" FORCE)
+SET(Eigen3_DIR '${VENDOR_DIR}/eigen/cmake' CACHE BOOL "eigen dir" FORCE)
+add_subdirectory(${MESHVIEW_DIR})
+
 #Link cuda libraries
 # if (SMPLX_USE_CUDA)
 #     set( DEPENDENCIES ${DEPENDENCIES} cublas cusparse )
@@ -204,19 +182,13 @@ set_target_properties( example PROPERTIES OUTPUT_NAME "smplx-example" )
 install(TARGETS example DESTINATION bin)
 
 if ( SMPLX_BUILD_VIEWER )
-    add_library( ${MESHVIEW_NAME} STATIC ${MESHVIEW_SOURCES} ${IMGUI_SOURCES}
-            ${MESHVIEW_VENDOR_SOURCES} )
-    target_link_libraries( ${MESHVIEW_NAME} ${MESHVIEW_DEPENDENCIES} )
-    set_target_properties( ${MESHVIEW_NAME} PROPERTIES OUTPUT_NAME "meshview" )
-    install(TARGETS ${MESHVIEW_NAME} DESTINATION lib)
-
     add_executable( viewer main_viewer.cpp )
-    target_link_libraries( viewer ${MESHVIEW_NAME} ${PROJ_NAME} )
+    target_link_libraries( viewer meshview::meshview ${PROJ_NAME} )
     set_target_properties( viewer PROPERTIES OUTPUT_NAME "smplx-viewer" )
     install(TARGETS viewer DESTINATION bin)
 
     add_executable( amass main_amass.cpp )
-    target_link_libraries( amass ${MESHVIEW_NAME} ${PROJ_NAME} )
+    target_link_libraries( amass meshview::meshview ${PROJ_NAME} )
     set_target_properties( amass PROPERTIES OUTPUT_NAME "smplx-amass" )
     install(TARGETS amass DESTINATION bin)
 endif( SMPLX_BUILD_VIEWER )
@@ -224,8 +196,8 @@ endif( SMPLX_BUILD_VIEWER )
 if ( MSVC )
     #set_property(TARGET ${PROJ_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG /LTCG )
     set_property(TARGET viewer APPEND PROPERTY LINK_FLAGS "/DEBUG /LTCG" )
-	set_property(TARGET amass APPEND PROPERTY LINK_FLAGS "/DEBUG /LTCG" )	
-	set_property(TARGET example APPEND PROPERTY LINK_FLAGS "/DEBUG /LTCG" )	
+    set_property(TARGET amass APPEND PROPERTY LINK_FLAGS "/DEBUG /LTCG" )
+    set_property(TARGET example APPEND PROPERTY LINK_FLAGS "/DEBUG /LTCG" )
 endif ( MSVC )
 
 if(WIN32)
@@ -240,7 +212,6 @@ elseif(UNIX)
     target_link_libraries( ${PROJ_NAME} -pthread )
     target_link_libraries( example -pthread )
     if (SMPLX_BUILD_VIEWER)
-        target_link_libraries( ${MESHVIEW_NAME} -pthread )
         target_link_libraries( viewer -pthread )
     endif()
     add_definitions(-DUNIX)
@@ -251,6 +222,6 @@ endif(WIN32)
 # create version.hpp
 configure_file( version.hpp.in "${PROJECT_BINARY_DIR}/include/smplx/version.hpp" )
 
-source_group( "Header Files" FILES ${HEADERS} ${MESHVIEW_HEADERS} )
-source_group( "Source Files" FILES ${SOURCES} ${MESHVIEW_SOURCES} )
-source_group( "Vendor Source Files" FILES ${VENDOR_SOURCES} ${MESHVIEW_VENDOR_SOURCES} )
+source_group( "Header Files" FILES ${HEADERS} )
+source_group( "Source Files" FILES ${SOURCES} )
+source_group( "Vendor Source Files" FILES ${VENDOR_SOURCES} )

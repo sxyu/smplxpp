@@ -4,16 +4,36 @@
 #include "smplx/defs.hpp"
 
 #define _SMPLX_ASSERT(x) do { \
-    auto tx = (x); \
-    if (!tx) { \
-    std::cout << "Assertion FAILED: \"" << #x << "\" (" << tx << \
+    if (!(x)) { \
+    std::cerr << "smplx assertion FAILED: \"" << #x << "\" (" << (bool)(x) << \
         ")\n  at " << __FILE__ << " line " << __LINE__ <<"\n"; \
     std::exit(1); \
 }} while(0)
 #define _SMPLX_ASSERT_EQ(x, y) do {\
-    auto tx = x; auto ty = y; \
-    if (tx != ty) { \
-    std::cout << "Assertion FAILED: " << #x << " != " << #y << " (" << tx << " != " << ty << \
+    if ((x) != (y)) { \
+    std::cerr << "smplx assertion FAILED: " << #x << \
+        " == " << #y << " (" << (x) << " != " << (y) << \
+        ")\n  at " << __FILE__ << " line " << __LINE__ <<"\n"; \
+    std::exit(1); \
+}} while(0)
+#define _SMPLX_ASSERT_NE(x, y) do {\
+    if ((x) == (y)) { \
+    std::cerr << "smplx assertion FAILED: " << #x << \
+        " != " << #y << " (" << (x) << " == " << (y) << \
+        ")\n  at " << __FILE__ << " line " << __LINE__ <<"\n"; \
+    std::exit(1); \
+}} while(0)
+#define _SMPLX_ASSERT_LE(x, y) do {\
+    if ((x) > (y)) { \
+    std::cerr << "smplx assertion FAILED: " << #x << \
+        " <= " << #y << " (" << (x) << " > " << (y) << \
+        ")\n  at " << __FILE__ << " line " << __LINE__ <<"\n"; \
+    std::exit(1); \
+}} while(0)
+#define _SMPLX_ASSERT_LT(x, y) do {\
+    if ((x) >= (y)) { \
+    std::cerr << "smplx assertion FAILED: " << #x << \
+        " < " << #y << " (" << (x) << " >= " << (y) << \
         ")\n  at " << __FILE__ << " line " << __LINE__ <<"\n"; \
     std::exit(1); \
 }} while(0)

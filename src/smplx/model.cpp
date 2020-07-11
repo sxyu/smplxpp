@@ -115,23 +115,24 @@ void Model<ModelConfig>::load(const std::string& path, const std::string& uv_pat
     // Maybe load UV (UV mapping WIP)
     if (uv_path.size()) {
         std::ifstream ifs(uv_path);
-        ifs >> n_uv_verts;
-        if (n_uv_verts) {
-            // Currently we only support cases where there areat least as many uv
-            // verts as vertices
-            _SMPLX_ASSERT(n_uv_verts >= n_verts());
+        ifs >> _n_uv_verts;
+        if (_n_uv_verts) {
             if (ifs) {
+                // _SMPLX_ASSERT_LE(n_verts(), _n_uv_verts);
                 // Load the uv data
-                uv.resize(n_uv_verts, 2);
-                for (size_t i = 0; i < n_uv_verts; ++i) ifs >> uv(i, 0) >> uv(i, 1);
-                _SMPLX_ASSERT((bool)ifs);
-                uv_triangles.resize(n_faces(), 3);
+                uv.resize(_n_uv_verts, 2);
+                for (size_t i = 0; i < _n_uv_verts; ++i) ifs >> uv(i, 0) >> uv(i, 1);
+                _SMPLX_ASSERT(ifs);
+                uv_faces.resize(n_faces(), 3);
                 for (size_t i = 0; i < n_faces(); ++i) {
-                    _SMPLX_ASSERT((bool)ifs);
-                    ifs >> uv_triangles(i, 0) >> uv_triangles(i, 1) >>
-                        uv_triangles(i, 2);
+                    _SMPLX_ASSERT(ifs);
+                    for (size_t j = 0; j < 3; ++j) {
+                        ifs >> uv_faces(i, j);
+                        // Make indices 0-based
+                        --uv_faces(i, j);
+                        _SMPLX_ASSERT_LT(uv_faces(i, j), _n_uv_verts);
+                    }
                 }
-                uv_triangles.array() -= 1;
             }
         }
     }

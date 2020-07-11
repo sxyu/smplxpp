@@ -39,25 +39,21 @@ static int run(std::string path) {
     // * Set up meshview viewer
     meshview::Viewer viewer;
 
-    viewer.add(meshview::Mesh(body.verts(), model.faces))
-        .estimate_normals().set_shininess(4.f)
-        .add_texture_solid<>(1.f, 0.7f, 0.8f)
-        .add_texture_solid<meshview::Texture::TYPE_SPECULAR>(0.1f, 0.1f, 0.1f);
-    auto& smpl_mesh = viewer.meshes.back();
+    auto& smpl_mesh = viewer.add_mesh(body.verts(), model.faces, 0.8f, 0.5f, 0.6f);
     // For some reason, all AMASS dada are rotated 90 degs CCW on x-axis;
     // we undo this rotation using the model matrix
     smpl_mesh.rotate(Eigen::AngleAxisf(
                     M_PI * .5f, Eigen::Vector3f(-1.f, 0.f, 0.f)).toRotationMatrix());
 
     viewer.draw_axes = true; // Press a to hide axes
-    auto center_camera = [&]() {
+    auto center_camera_on_human = [&]() {
         // Set camera's center of rotation to transformed root joint
         viewer.camera.center_of_rot = (/* model matrix */ smpl_mesh.transform *
             /* deformed root joint */ body.joints().row(0).transpose().homogeneous())
                     .template head<3>();
     };
     viewer.camera.dist_to_center = 4.f; // Zoom out a little
-    center_camera();
+    center_camera_on_human();
 
     // * Animation state
     int frame = 0; // Current frame
@@ -65,6 +61,8 @@ static int run(std::string path) {
     std::chrono::high_resolution_clock::time_point time_start; // Time when we started anim
     bool playing = false;
     bool camera_follow_human = true; // Whether to automatically follow the human
+
+    bool updated;
 
     // Copy AMASS frame 'frame' to body and update mesh + (optionally) camera
     auto update_frame = [&]() {
@@ -74,16 +72,11 @@ static int run(std::string path) {
         body.update();
         smpl_mesh.verts_pos().noalias() = body.verts();
         smpl_mesh.faces.noalias() = model.faces;
-        smpl_mesh.estimate_normals(); // Need to recompute normals
-        // Update the mesh on-the-fly without remaking the VAO
-        // (without this call, rendered mesh wouldn't change)
-        smpl_mesh.update();
         if (camera_follow_human) {
             // Follow the human with camera (set c.o.r. to root joint)
-            center_camera();
+            center_camera_on_human();
         }
-        // Update camera view on-the-fly (without this, camera won't move at all!)
-        viewer.camera.update_view();
+        updated = true;
     };
 
     // Helper to toggle play/pause
@@ -115,6 +108,7 @@ static int run(std::string path) {
     };
     viewer.on_open = [](){ ImGui::GetIO().IniFilename = nullptr; };
     viewer.on_loop = [&]() {
+        updated = false;
         if (playing) {
             double delta = std::chrono::duration<double>(
                     std::chrono::high_resolution_clock::now() - time_start).count();
@@ -130,8 +124,10 @@ static int run(std::string path) {
                 }
             }
         }
+        return updated;
     };
     viewer.on_gui = [&]() {
+        updated = false;
         static ImGui::FileBrowser open_file_dialog;
         if (open_file_dialog.GetTitle().empty()) {
             open_file_dialog.SetTypeFilters({ ".npz" });
@@ -192,6 +188,7 @@ static int run(std::string path) {
             update_frame();
             viewer.loop_wait_events = true;
         }
+        return updated;
     };
     viewer.show();
     return 0;

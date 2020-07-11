@@ -57,7 +57,7 @@ public:
     Model& operator=(Model&& other) =delete;
 
     // Returns true if has UV map
-    inline bool has_uv_map() const { return n_uv_verts > 0; }
+    inline bool has_uv_map() const { return _n_uv_verts > 0; }
 
     using Config = ModelConfig;
 
@@ -69,8 +69,8 @@ public:
     static constexpr size_t n_faces() { return Config::n_faces(); }
     // Number UV vertices (may be more than n_verts due to seams)
     // 0 if UV not available
-    // NOTE: not a constexpr
-    size_t n_uv_verts;
+    // NOTE: not static or a constexpr
+    inline size_t n_uv_verts() { return _n_uv_verts; }
 
     // Total number of joints = n_explicit_joints + n_hand_pca_joints * 2
     static constexpr size_t n_joints() { return Config::n_joints(); }
@@ -137,7 +137,7 @@ public:
     // UV coordinates, size (n_uv_verts, 2)
     Points2D uv;
     // UV triangles (indices in uv), size (n_faces, 3)
-    Triangles uv_triangles;
+    Triangles uv_faces;
 
 #ifdef SMPLX_CUDA_ENABLED
     // ADVANCED: GPU data pointers
@@ -153,7 +153,12 @@ public:
 private:
     void _cuda_load();
     void _cuda_free();
+#else
+private:
 #endif
+    // Number UV vertices (may be more than n_verts due to seams)
+    // 0 if UV not available
+    size_t _n_uv_verts;
 };
 // SMPL Model
 using ModelS = Model<model_config::SMPL>;
@@ -236,12 +241,12 @@ private:
 
     // Deformed joints (shape and pose applied)
     mutable Points _joints;
-	
-	// Transform local to global coordinates
-	// Inputs: trans(), _joints_shaped
-	// Outputs: _joints
-	// Input/output: _joint_transforms
-	void _local_to_global();
+
+    // Transform local to global coordinates
+    // Inputs: trans(), _joints_shaped
+    // Outputs: _joints
+    // Input/output: _joint_transforms
+    void _local_to_global();
 
 #ifdef SMPLX_CUDA_ENABLED
 public:
@@ -258,12 +263,12 @@ public:
     } device;
 
 private:
-	// True if latest deformed vertices constructed by update()
-	// have been retrieved to main memory
+    // True if latest deformed vertices constructed by update()
+    // have been retrieved to main memory
     mutable bool _verts_retrieved;
-	// True if last update made use of the GPU
+    // True if last update made use of the GPU
     bool _last_update_used_gpu;
-	// Cuda helpers
+    // Cuda helpers
     void _cuda_load();
     void _cuda_free();
     void _cuda_maybe_retrieve_verts() const;

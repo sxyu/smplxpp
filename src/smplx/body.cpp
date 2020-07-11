@@ -58,10 +58,12 @@ void Body<ModelConfig>::update(bool force_cpu, bool enable_pose_blendshapes) {
     // matrices rowmajor, only for blend shapes
     Vector blendshape_params(model.n_blend_shapes());
 
-    using AffineTransformMap =
-        Eigen::Map<Eigen::Matrix<Scalar, 3, 4, Eigen::RowMajor> >;
+    using TransformMap =
+        Eigen::Map<Eigen::Matrix<Scalar, 3, 4, Eigen::RowMajor>>;
+    using TransformTransposedMap =
+        Eigen::Map<Eigen::Matrix<Scalar, 4, 3>>;
     using RotationMap =
-        Eigen::Map<Eigen::Matrix<Scalar, 3, 3, Eigen::RowMajor> >;
+        Eigen::Map<Eigen::Matrix<Scalar, 3, 3, Eigen::RowMajor>>;
 
     // Copy body pose onto full pose
     full_pose.head(3 * model.n_explicit_joints()).noalias() = pose();
@@ -77,11 +79,11 @@ void Body<ModelConfig>::update(bool force_cpu, bool enable_pose_blendshapes) {
     blendshape_params.head<ModelConfig::n_shape_blends()>() = shape();
 
     // Convert angle-axis to rotation matrix using rodrigues
-    AffineTransformMap(_joint_transforms.topRows<1>().data())
+    TransformMap(_joint_transforms.topRows<1>().data())
         .template leftCols<3>().noalias() =
         util::rodrigues<float>(full_pose.head<3>());
     for (size_t i = 1; i < model.n_joints(); ++i) {
-        AffineTransformMap joint_trans(_joint_transforms.row(i).data());
+        TransformMap joint_trans(_joint_transforms.row(i).data());
         joint_trans.template leftCols<3>().noalias() =
             util::rodrigues<float>(full_pose.segment<3>(3 * i));
         RotationMap mp(blendshape_params.data() +  9 * i + (model.n_shape_blends() - 9));
@@ -125,7 +127,7 @@ void Body<ModelConfig>::update(bool force_cpu, bool enable_pose_blendshapes) {
 
     // local_to_global<ModelConfig>(trans(), _joints_shaped, _joints, _joint_transforms);
     _local_to_global();
-	// _SMPLX_PROFILE(localglobal);
+    // _SMPLX_PROFILE(localglobal);
 
     // * LBS *
     // Construct a transform for each vertex
@@ -134,10 +136,10 @@ void Body<ModelConfig>::update(bool force_cpu, bool enable_pose_blendshapes) {
     // _SMPLX_PROFILE(lbs weight computation);
 
     // Apply affine transform to each vertex and store to output
+// #pragma omp parallel for // Seems to only make it slower??
     for (size_t i = 0; i < model.n_verts(); ++i) {
-        AffineTransformMap transform(vert_transforms.row(i).data());
-        _verts.row(i) =
-            _verts_shaped.row(i).homogeneous() * transform.transpose();
+        TransformTransposedMap transform_tr(vert_transforms.row(i).data());
+        _verts.row(i) = _verts_shaped.row(i).homogeneous() * transform_tr;
     }
     // _SMPLX_PROFILE(lbs point transform);
 }
@@ -145,33 +147,32 @@ void Body<ModelConfig>::update(bool force_cpu, bool enable_pose_blendshapes) {
 template<class ModelConfig>
 void Body<ModelConfig>::_local_to_global() {
     _joints.resize(ModelConfig::n_joints(), 3);
-    using AffineTransformMap = Eigen::Map<Eigen::Matrix<Scalar, 3, 4, Eigen::RowMajor> >;
+    using TransformMap = Eigen::Map<Eigen::Matrix<Scalar, 3, 4, Eigen::RowMajor>>;
+    using TransformTransposedMap = Eigen::Map<Eigen::Matrix<Scalar, 4, 3>>;
     // Handle root joint transforms
-    AffineTransformMap root_transform(_joint_transforms.topRows<1>().data());
-    root_transform.template rightCols<1>().noalias() =
-        _joints_shaped.topRows<1>().transpose() + trans();
-    _joints.template topRows<1>().noalias() = root_transform.template rightCols<1>().transpose();
+    TransformTransposedMap root_transform_tr(_joint_transforms.topRows<1>().data());
+    root_transform_tr.template bottomRows<1>().noalias() =
+        _joints_shaped.topRows<1>() + trans().transpose();
+    _joints.template topRows<1>().noalias() = root_transform_tr.template bottomRows<1>();
 
     // Complete the affine transforms for all other joint by adding translation
     // components and composing with parent
     for (int i = 1; i < ModelConfig::n_joints(); ++i) {
-        AffineTransformMap transform(_joint_transforms.row(i).data());
+        TransformTransposedMap transform_tr(_joint_transforms.row(i).data());
         const auto p = ModelConfig::parent[i];
         // Set relative translation
-        transform.template rightCols<1>().noalias() =
-            (_joints_shaped.row(i) - _joints_shaped.row(p)).transpose();
+        transform_tr.bottomRows<1>().noalias() = _joints_shaped.row(i) - _joints_shaped.row(p);
         // Compose rotation with parent
         util::mul_affine<float, Eigen::RowMajor>(
-            AffineTransformMap(_joint_transforms.row(p).data()), transform);
+            TransformMap(_joint_transforms.row(p).data()), transform_tr.transpose());
         // Grab the joint position in case the user wants it
-        _joints.row(i).noalias() = transform.template rightCols<1>().transpose();
+        _joints.row(i).noalias() = transform_tr.bottomRows<1>();
     }
 
     for (int i = 0; i < ModelConfig::n_joints(); ++i) {
-        AffineTransformMap transform(_joint_transforms.row(i).data());
+        TransformTransposedMap transform_tr(_joint_transforms.row(i).data());
         // Normalize the translation to global
-        transform.template rightCols<1>().noalias() -=
-            transform.template leftCols<3>() * _joints_shaped.row(i).transpose();
+        transform_tr.bottomRows<1>().noalias() -= _joints_shaped.row(i) * transform_tr.topRows<3>();
     }
 }
 

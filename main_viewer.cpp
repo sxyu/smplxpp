@@ -24,44 +24,75 @@ static int run(Gender gender, bool force_cpu, bool pose_blends) {
     // * Construct SMPL body model
     Model<ModelConfig> model(gender);
     Body<ModelConfig> body(model);
-    {
-_SMPLX_BEGIN_PROFILE;
     body.update(force_cpu, pose_blends);
-_SMPLX_PROFILE(UPDATE);
-    }
 
     // * Set up meshview viewer
     meshview::Viewer viewer;
     viewer.draw_axes = false; // Press a to see axes
 
+    meshview::Texture::Image image(256, 3*256);
+    for (size_t r = 0; r < image.rows(); ++r) {
+        for (size_t c = 0; c < image.cols() / 3; ++c) {
+            auto rgb = image.block<1, 3>(r, c * 3);
+            rgb.x() = (float)r / image.rows();
+            rgb.y() = (float)c / image.cols();
+            rgb.z() = 0.5;
+        }
+    }
+
     // Main body model
-    viewer.add(meshview::Mesh(body.verts(), model.faces))
-        .estimate_normals().set_shininess(4.f)
-        .add_texture_solid<>(1.f, 0.7f, 0.8f)
-        .add_texture_solid<meshview::Texture::TYPE_SPECULAR>(0.1f, 0.1f, 0.1f)
-        .translate(Eigen::Vector3f(0.f, 0.f, 0.f));
+    auto& smpl_mesh =
+        viewer.add_mesh(body.verts(), model.faces)
+            .translate(Eigen::Vector3f(0.f, 0.f, 0.f))
+            .set_tex_coords(model.uv, model.uv_faces)
+            .add_texture(image, 3);
 
-    // LBS weights visualization
-    viewer.add(meshview::PointCloud(body.verts(), model.weights
-                * util::auto_color_table(model.n_joints())))
-        .translate(Eigen::Vector3f(2.0f, 0.f, 0.f));
+    // LBS weights color visualization
+    auto& smpl_mesh_lbs =
+        viewer.add_mesh(body.verts(), model.faces,
+                /* use vertex-based colorization, by passing n-by-3 matrix as 3rd argument */
+                    model.weights * util::auto_color_table(model.n_joints()))
+            .translate(Eigen::Vector3f(2.0f, 0.f, 0.f));
 
-    auto& smpl_mesh = viewer.meshes.back();
-    auto& smpl_pc = viewer.point_clouds.back();
+    // Joints
+    std::vector<meshview::Mesh*> joint_spheres;
+    // Lines are 'point clouds' with lines=true, sorry for weirdness
+    std::vector<meshview::PointCloud*> joint_lines;
+    const Vector3f joint_offset(-2.f, 0.f, 0.f);
+    for (size_t i = 0; i < model.n_joints(); ++i) {
+        auto joint_pos = body.joints().row(i).transpose();
+        joint_spheres.push_back(
+          &viewer.add_sphere(Vector3f::Zero(),
+                          0.01f, Vector3f(1.f, 0.5f, 0.0f))
+          .translate(joint_pos + joint_offset));
+        if (i) {
+            auto parent_pos = body.joints().row(model.parent(i)).transpose();
+            joint_lines.push_back(&viewer.add_line(joint_pos, parent_pos,
+                                  Vector3f(0.4f, 0.5f, 0.8f)).translate(joint_offset));
+        }
+    }
 
+    bool updated = false;
     auto update = [&]() {
         body.update(force_cpu, pose_blends);
         smpl_mesh.verts_pos().noalias() = body.verts();
-        smpl_mesh.faces.noalias() = model.faces;
-        smpl_mesh.estimate_normals(); // Need to recompute normals
         // Update the mesh on-the-fly (send to GPU)
-        smpl_mesh.update();
-        smpl_pc.verts_pos().noalias() = body.verts();
-        smpl_pc.update();
+        smpl_mesh_lbs.verts_pos().noalias() = body.verts();
+        for (size_t i = 0; i < model.n_joints(); ++i) {
+            auto joint_pos = body.joints().row(i);
+            joint_spheres[i]->set_translation(joint_pos.transpose() + joint_offset);
+            if (i) {
+                auto parent_pos = body.joints().row(model.parent(i));
+                joint_lines[i - 1]->verts_pos().row(0).noalias() = joint_pos;
+                joint_lines[i - 1]->verts_pos().row(1).noalias() = parent_pos;
+            }
+        }
+        updated = true;
     };
 
     viewer.on_open = [](){ ImGui::GetIO().IniFilename = nullptr; };
     viewer.on_gui = [&]() {
+        updated = false;
         // * GUI code
         ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
         ImGui::SetNextWindowSize(ImVec2(500, 360), ImGuiCond_Once);
@@ -130,7 +161,7 @@ _SMPLX_PROFILE(UPDATE);
 
         ImGui::SetNextWindowPos(ImVec2(10, 395), ImGuiCond_Once);
         ImGui::SetNextWindowSize(ImVec2(500, 100), ImGuiCond_Once);
-        ImGui::Begin("Camera", NULL);
+        ImGui::Begin("Camera and Rendering", NULL);
 
         if (ImGui::Button("Reset view")) {
             viewer.camera.reset_view();
@@ -139,6 +170,8 @@ _SMPLX_PROFILE(UPDATE);
         if (ImGui::Button("Reset projection")) {
             viewer.camera.reset_proj();
         }
+        ImGui::SameLine();
+        ImGui::Checkbox("wireframe", &viewer.wireframe);
 
         if (ImGui::TreeNode("View")) {
             if(ImGui::SliderFloat3("cen_of_rot", viewer.camera.center_of_rot.data(), -5.f, 5.f))
@@ -160,7 +193,18 @@ _SMPLX_PROFILE(UPDATE);
             ImGui::TreePop();
         }
 
-        ImGui::End(); // Model Parameters
+        if (ImGui::TreeNode("Lighting")) {
+            if(ImGui::SliderFloat3("pos", viewer.light_pos.data(), -4.f, 4.f))
+            if(ImGui::SliderFloat3("ambient", viewer.light_color_ambient.data(), 0.f, 1.f))
+            if(ImGui::SliderFloat3("diffuse", viewer.light_color_diffuse.data(), 0.f, 1.f))
+            if(ImGui::SliderFloat3("specular", viewer.light_color_specular.data(), 0.f, 1.f))
+            ImGui::TreePop();
+        }
+
+        ImGui::End(); // Camera and Rendering
+         // Return true if updated to indicate mesh data has been changed
+         // the viewer will update the GPU buffers automatically
+         return updated;
     };
     viewer.show();
     return 0;

@@ -10,3 +10,6 @@
 [submodule "3rdparty/eigen"]
 	path = 3rdparty/eigen
 	url = https://gitlab.com/libeigen/eigen
+[submodule "3rdparty/meshview"]
+	path = 3rdparty/meshview
+	url = https://github.com/sxyu/meshview

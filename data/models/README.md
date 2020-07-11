@@ -39,5 +39,11 @@ You should have
 - `data/models/smplh/SMPLH_FEMALE.npz`
 
 ## Notes
-- SMPL+H/SMPL UV maps are not yet available (I will figure this out soon)
-- SMPL-X UV map is custom-made and not optimal
+- SMPL/SMPL-H UV maps are provided by [github.com/radvani] in this issue
+  https://github.com/Lotayou/densebody_pytorch/issues/4
+- SMPL-X UV map is custom-made and likely not very good
+- To use your own UV map, modify `data/models/<model>/uv.txt` UV map format:
+    - First line: n = number of UV vertices
+    - next n lines: u v = float coordinates of a vertex
+    - next num_faces lines (num_faces is the number of rows in 'f' of the model):
+      a b c = int, 1-based indices of UV vertices (from above) in each triangle
