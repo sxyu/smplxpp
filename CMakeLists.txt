@@ -91,7 +91,7 @@ if(NOT EXISTS "${MESHVIEW_DIR}/CMakeLists.txt")
    message(FATAL_ERROR "A submodule as not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
-file(GLOB_RECURSE SOURCES ${SRC_DIR}/smplx/*.cpp)
+file(GLOB_RECURSE SOURCES ${SRC_DIR}/*.cpp)
 file(GLOB_RECURSE HEADERS ${INCLUDE_DIR}/smplx/*.cpp)
 
 file(GLOB IMGUI_SOURCES ${IMGUI_DIR}/*.cpp)
@@ -99,7 +99,7 @@ file(GLOB IMGUI_SOURCES ${IMGUI_DIR}/*.cpp)
 set( VENDOR_SOURCES ${CNPY_DIR}/cnpy.cpp)
 
 if ( SMPLX_CUDA_ENABLED )
-    file(GLOB_RECURSE SOURCES_CUDA ${SRC_DIR}/smplx/cuda/*.cu)
+    file(GLOB_RECURSE SOURCES_CUDA ${SRC_DIR}/cuda/*.cu)
     set (SOURCES ${SOURCES} ${SOURCES_CUDA})
 endif ( SMPLX_CUDA_ENABLED )
 
@@ -120,6 +120,7 @@ set( DEPENDENCIES )
 
 include_directories(
     ${INCLUDE_DIR}
+    ${VENDOR_DIR}/misc
     ${PROJECT_BINARY_DIR}/include
     ${CNPY_DIR}
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}

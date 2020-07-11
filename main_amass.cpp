@@ -12,10 +12,8 @@
 #include "smplx/smplx.hpp"
 #include "smplx/sequence.hpp"
 #include "smplx/util.hpp"
-#include "meshview/viewer.hpp"
-
-#include "imgui_impl_opengl3.h"
-#include "imgui_impl_glfw.h"
+#include "meshview/meshview.hpp"
+#include "meshview/meshview_imgui.hpp"
 #include "imfilebrowser.h"
 
 using namespace smplx;

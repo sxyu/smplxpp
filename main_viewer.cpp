@@ -12,8 +12,8 @@
 
 #include "smplx/smplx.hpp"
 #include "smplx/util.hpp"
-#include "meshview/viewer.hpp"
 
+#include "meshview/meshview.hpp"
 #include "meshview/meshview_imgui.hpp"
 
 using namespace smplx;
