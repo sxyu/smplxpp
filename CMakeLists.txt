@@ -1,6 +1,7 @@
 cmake_minimum_required( VERSION 3.11 )
 
 if(NOT CMAKE_BUILD_TYPE)
+    message(STATUS "Setting build type to Release")
     set(CMAKE_BUILD_TYPE Release)
 endif()
 if (POLICY CMP0048)
@@ -119,9 +120,7 @@ set( DEPENDENCIES )
 # endif()
 
 include_directories(
-    ${INCLUDE_DIR}
     ${VENDOR_DIR}/misc
-    ${PROJECT_BINARY_DIR}/include
     ${CNPY_DIR}
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
 )
@@ -171,6 +170,11 @@ add_subdirectory(${MESHVIEW_DIR})
 
 add_library( ${PROJ_NAME} STATIC ${SOURCES} ${VENDOR_SOURCES} )
 set_target_properties( ${PROJ_NAME} PROPERTIES OUTPUT_NAME "smplx" )
+target_include_directories(${PROJ_NAME} PUBLIC
+    $<BUILD_INTERFACE:${INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 target_link_libraries( ${PROJ_NAME} ${DEPENDENCIES} )
 install(TARGETS ${PROJ_NAME} DESTINATION lib)
 if (SMPLX_USE_CUDA)
