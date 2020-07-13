@@ -7,18 +7,17 @@
 // 3. cpu or gpu. default gpu (i.e. use gpu where available)
 // 3. whether to enable pose blendshapes. on or off. default on
 //    note pose blendshapes are very slow.
-#include <iostream>
 #include <algorithm>
-
-#include "smplx/smplx.hpp"
-#include "smplx/util.hpp"
+#include <iostream>
 
 #include "meshview/meshview.hpp"
 #include "meshview/meshview_imgui.hpp"
+#include "smplx/smplx.hpp"
+#include "smplx/util.hpp"
 
 using namespace smplx;
 
-template<class ModelConfig>
+template <class ModelConfig>
 static int run(Gender gender, bool force_cpu, bool pose_blends) {
     // * Construct SMPL body model
     Model<ModelConfig> model(gender);
@@ -27,9 +26,9 @@ static int run(Gender gender, bool force_cpu, bool pose_blends) {
 
     // * Set up meshview viewer
     meshview::Viewer viewer;
-    viewer.draw_axes = false; // Press a to see axes
+    viewer.draw_axes = false;  // Press a to see axes
 
-    meshview::Texture::Image image(256, 3*256);
+    meshview::Image image(256, 3 * 256);
     for (size_t r = 0; r < image.rows(); ++r) {
         for (size_t c = 0; c < image.cols() / 3; ++c) {
             auto rgb = image.block<1, 3>(r, c * 3);
@@ -40,17 +39,18 @@ static int run(Gender gender, bool force_cpu, bool pose_blends) {
     }
 
     // Main body model
-    auto& smpl_mesh =
-        viewer.add_mesh(body.verts(), model.faces)
-            .translate(Eigen::Vector3f(0.f, 0.f, 0.f))
-            .set_tex_coords(model.uv, model.uv_faces)
-            .add_texture(image, 3);
+    auto& smpl_mesh = viewer.add_mesh(body.verts(), model.faces)
+                          .translate(Eigen::Vector3f(0.f, 0.f, 0.f))
+                          .set_tex_coords(model.uv, model.uv_faces)
+                          .add_texture(image, 3);
 
     // LBS weights color visualization
     auto& smpl_mesh_lbs =
-        viewer.add_mesh(body.verts(), model.faces,
-                /* use vertex-based colorization, by passing n-by-3 matrix as 3rd argument */
-                    model.weights * util::auto_color_table(model.n_joints()))
+        viewer
+            .add_mesh(body.verts(), model.faces,
+                      /* use vertex-based colorization, by passing n-by-3 matrix
+                         as 3rd argument */
+                      model.weights * util::auto_color_table(model.n_joints()))
             .translate(Eigen::Vector3f(2.0f, 0.f, 0.f));
 
     // Joints
@@ -61,13 +61,15 @@ static int run(Gender gender, bool force_cpu, bool pose_blends) {
     for (size_t i = 0; i < model.n_joints(); ++i) {
         auto joint_pos = body.joints().row(i).transpose();
         joint_spheres.push_back(
-          &viewer.add_sphere(Vector3f::Zero(),
-                          0.01f, Vector3f(1.f, 0.5f, 0.0f))
-          .translate(joint_pos + joint_offset));
+            &viewer
+                 .add_sphere(Vector3f::Zero(), 0.01f, Vector3f(1.f, 0.5f, 0.0f))
+                 .translate(joint_pos + joint_offset));
         if (i) {
             auto parent_pos = body.joints().row(model.parent(i)).transpose();
-            joint_lines.push_back(&viewer.add_line(joint_pos, parent_pos,
-                                  Vector3f(0.4f, 0.5f, 0.8f)).translate(joint_offset));
+            joint_lines.push_back(&viewer
+                                       .add_line(joint_pos, parent_pos,
+                                                 Vector3f(0.4f, 0.5f, 0.8f))
+                                       .translate(joint_offset));
         }
     }
 
@@ -79,7 +81,8 @@ static int run(Gender gender, bool force_cpu, bool pose_blends) {
         smpl_mesh_lbs.verts_pos().noalias() = body.verts();
         for (size_t i = 0; i < model.n_joints(); ++i) {
             auto joint_pos = body.joints().row(i);
-            joint_spheres[i]->set_translation(joint_pos.transpose() + joint_offset);
+            joint_spheres[i]->set_translation(joint_pos.transpose() +
+                                              joint_offset);
             if (i) {
                 auto parent_pos = body.joints().row(model.parent(i));
                 joint_lines[i - 1]->verts_pos().row(0).noalias() = joint_pos;
@@ -89,37 +92,55 @@ static int run(Gender gender, bool force_cpu, bool pose_blends) {
         updated = true;
     };
 
-    viewer.on_open = [](){ ImGui::GetIO().IniFilename = nullptr; };
+    viewer.on_open = []() { ImGui::GetIO().IniFilename = nullptr; };
     viewer.on_gui = [&]() {
         updated = false;
         // * GUI code
         ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
         ImGui::SetNextWindowSize(ImVec2(500, 360), ImGuiCond_Once);
         ImGui::Begin("Model Parameters", NULL);
-        ImGui::Text("Model: %s  Gender: %s", model.name(), util::gender_to_str(model.gender));
+        ImGui::Text("Model: %s  Gender: %s", model.name(),
+                    util::gender_to_str(model.gender));
         ImGui::TextUnformatted("Press h for help");
         ImGui::TextUnformatted("Reset: ");
         ImGui::SameLine();
-        if (ImGui::Button("Trans##ResetTrans")) { body.trans().setZero(); update(); }
+        if (ImGui::Button("Trans##ResetTrans")) {
+            body.trans().setZero();
+            update();
+        }
         ImGui::SameLine();
-        if (ImGui::Button("Pose##ResetPose")) { body.pose().setZero(); update(); }
+        if (ImGui::Button("Pose##ResetPose")) {
+            body.pose().setZero();
+            update();
+        }
         ImGui::SameLine();
-        if (ImGui::Button("Hand##ResetHand")) { body.hand_pca().setZero(); update(); }
+        if (ImGui::Button("Hand##ResetHand")) {
+            body.hand_pca().setZero();
+            update();
+        }
         ImGui::SameLine();
-        if (ImGui::Button("Shape##ResetShape")) { body.shape().setZero(); update(); }
+        if (ImGui::Button("Shape##ResetShape")) {
+            body.shape().setZero();
+            update();
+        }
 
-        if(ImGui::SliderFloat3("translation", body.trans().data(), -5.f, 5.f)) update();
+        if (ImGui::SliderFloat3("translation", body.trans().data(), -5.f, 5.f))
+            update();
         if (ImGui::TreeNode("Pose")) {
             const int STEP = 10;
             for (size_t j = 0; j < model.n_explicit_joints(); j += STEP) {
                 size_t end_idx = std::min(j + STEP, model.n_explicit_joints());
                 if (ImGui::TreeNode(("Angle axis " + std::to_string(j) + " - " +
-                            std::to_string(end_idx-1)).c_str())) {
+                                     std::to_string(end_idx - 1))
+                                        .c_str())) {
                     for (size_t i = j; i < end_idx; ++i) {
-                        if(ImGui::SliderFloat3((std::string(
-                                            std::string(model.joint_name(i)) +
-                                            "##joint") + std::to_string(i)).c_str(),
-                                    body.pose().data() + i * 3, -1.6f, 1.6f)) update();
+                        if (ImGui::SliderFloat3(
+                                (std::string(std::string(model.joint_name(i)) +
+                                             "##joint") +
+                                 std::to_string(i))
+                                    .c_str(),
+                                body.pose().data() + i * 3, -1.6f, 1.6f))
+                            update();
                     }
                     ImGui::TreePop();
                 }
@@ -131,7 +152,8 @@ static int run(Gender gender, bool force_cpu, bool pose_blends) {
                 if (ImGui::TreeNode("Left Hand")) {
                     for (size_t i = 0; i < model.n_hand_pca(); ++i) {
                         if (ImGui::SliderFloat(
-                                (std::string("pca_l") + std::to_string(i)).c_str(),
+                                (std::string("pca_l") + std::to_string(i))
+                                    .c_str(),
                                 body.hand_pca_l().data() + i, -5.f, 5.f))
                             update();
                     }
@@ -140,7 +162,8 @@ static int run(Gender gender, bool force_cpu, bool pose_blends) {
                 if (ImGui::TreeNode("Right Hand")) {
                     for (size_t i = 0; i < model.n_hand_pca(); ++i) {
                         if (ImGui::SliderFloat(
-                                (std::string("pca_r") + std::to_string(i)).c_str(),
+                                (std::string("pca_r") + std::to_string(i))
+                                    .c_str(),
                                 body.hand_pca_r().data() + i, -5.f, 5.f))
                             update();
                     }
@@ -151,12 +174,14 @@ static int run(Gender gender, bool force_cpu, bool pose_blends) {
         }
         if (ImGui::TreeNode("Shape")) {
             for (size_t i = 0; i < model.n_shape_blends(); ++i) {
-                if(ImGui::SliderFloat((std::string("shape") + std::to_string(i)).c_str(),
-                            body.shape().data() + i, -5.f, 5.f)) update();
+                if (ImGui::SliderFloat(
+                        (std::string("shape") + std::to_string(i)).c_str(),
+                        body.shape().data() + i, -5.f, 5.f))
+                    update();
             }
             ImGui::TreePop();
         }
-        ImGui::End(); // Model Parameters
+        ImGui::End();  // Model Parameters
 
         ImGui::SetNextWindowPos(ImVec2(10, 395), ImGuiCond_Once);
         ImGui::SetNextWindowSize(ImVec2(500, 100), ImGuiCond_Once);
@@ -173,37 +198,53 @@ static int run(Gender gender, bool force_cpu, bool pose_blends) {
         ImGui::Checkbox("wireframe", &viewer.wireframe);
 
         if (ImGui::TreeNode("View")) {
-            if(ImGui::SliderFloat3("cen_of_rot", viewer.camera.center_of_rot.data(), -5.f, 5.f))
+            if (ImGui::SliderFloat3("cen_of_rot",
+                                    viewer.camera.center_of_rot.data(), -5.f,
+                                    5.f))
                 viewer.camera.update_view();
-            if(ImGui::SliderFloat("radius", &viewer.camera.dist_to_center, 0.01f, 10.f))
+            if (ImGui::SliderFloat("radius", &viewer.camera.dist_to_center,
+                                   0.01f, 10.f))
                 viewer.camera.update_view();
-            if(ImGui::DragFloat("yaw", &viewer.camera.yaw)) viewer.camera.update_view();
-            if(ImGui::DragFloat("pitch", &viewer.camera.pitch)) viewer.camera.update_view();
-            if(ImGui::DragFloat("roll", &viewer.camera.roll)) viewer.camera.update_view();
-            if(ImGui::SliderFloat3("world_up", viewer.camera.world_up.data(), -5.f, 5.f))
+            if (ImGui::DragFloat("yaw", &viewer.camera.yaw))
+                viewer.camera.update_view();
+            if (ImGui::DragFloat("pitch", &viewer.camera.pitch))
+                viewer.camera.update_view();
+            if (ImGui::DragFloat("roll", &viewer.camera.roll))
+                viewer.camera.update_view();
+            if (ImGui::SliderFloat3("world_up", viewer.camera.world_up.data(),
+                                    -5.f, 5.f))
                 viewer.camera.update_view();
             ImGui::TreePop();
         }
 
         if (ImGui::TreeNode("Projection")) {
-            if(ImGui::SliderFloat("fovy", &viewer.camera.fovy, 0.01f, 1.5f)) viewer.camera.update_proj();
-            if(ImGui::SliderFloat("z_close", &viewer.camera.z_close, 0.01f, 10.f)) viewer.camera.update_proj();
-            if(ImGui::SliderFloat("z_far", &viewer.camera.z_far, 11.f, 5000.f)) viewer.camera.update_proj();
+            if (ImGui::SliderFloat("fovy", &viewer.camera.fovy, 0.01f, 1.5f))
+                viewer.camera.update_proj();
+            if (ImGui::SliderFloat("z_close", &viewer.camera.z_close, 0.01f,
+                                   10.f))
+                viewer.camera.update_proj();
+            if (ImGui::SliderFloat("z_far", &viewer.camera.z_far, 11.f, 5000.f))
+                viewer.camera.update_proj();
             ImGui::TreePop();
         }
 
         if (ImGui::TreeNode("Lighting")) {
-            if(ImGui::SliderFloat3("pos", viewer.light_pos.data(), -4.f, 4.f))
-            if(ImGui::SliderFloat3("ambient", viewer.light_color_ambient.data(), 0.f, 1.f))
-            if(ImGui::SliderFloat3("diffuse", viewer.light_color_diffuse.data(), 0.f, 1.f))
-            if(ImGui::SliderFloat3("specular", viewer.light_color_specular.data(), 0.f, 1.f))
-            ImGui::TreePop();
+            if (ImGui::SliderFloat3("pos", viewer.light_pos.data(), -4.f, 4.f))
+                if (ImGui::SliderFloat3(
+                        "ambient", viewer.light_color_ambient.data(), 0.f, 1.f))
+                    if (ImGui::SliderFloat3("diffuse",
+                                            viewer.light_color_diffuse.data(),
+                                            0.f, 1.f))
+                        if (ImGui::SliderFloat3(
+                                "specular", viewer.light_color_specular.data(),
+                                0.f, 1.f))
+                            ImGui::TreePop();
         }
 
-        ImGui::End(); // Camera and Rendering
-         // Return true if updated to indicate mesh data has been changed
-         // the viewer will update the GPU buffers automatically
-         return updated;
+        ImGui::End();  // Camera and Rendering
+        // Return true if updated to indicate mesh data has been changed
+        // the viewer will update the GPU buffers automatically
+        return updated;
     };
     viewer.show();
     return 0;

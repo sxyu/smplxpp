@@ -5,11 +5,19 @@ import sys, os
 from os import path
 
 if len(sys.argv) < 2:
-    print('Util to convert SMPL pkl model to npz usable by our C++ software. Outputs to data/models/smpl')
-    print('Usage: python tools/smpl2npz.py /path/to/smpl/models/basic[mM]odel_[mf]_lbs_10_207_0_v1.0.0.pkl [/path/to/other.pkl...]')
+    print(
+        'Util to convert SMPL pkl model to npz usable by our C++ software. Outputs to data/models/smpl'
+    )
+    print(
+        'Usage: python tools/smpl2npz.py /path/to/smpl/models/basic[mM]odel_[mf]_lbs_10_207_0_v1.0.0.pkl [/path/to/other.pkl...]'
+    )
     print('IMPORTANT: Run from project root dir (the one containing tools)')
-    print('Tip: Download SMPL m/f models from https://smpl.is.tue.mpg.de/ ("for python users")')
-    print('Tip: Download SMPL neutral model from https://smplify.is.tue.mpg.de/ ("for python users")')
+    print(
+        'Tip: Download SMPL m/f models from https://smpl.is.tue.mpg.de/ ("for python users")'
+    )
+    print(
+        'Tip: Download SMPL neutral model from https://smplify.is.tue.mpg.de/ ("for python users")'
+    )
 output_dir = 'data/models/smpl/'
 os.makedirs(output_dir, exist_ok=True)
 

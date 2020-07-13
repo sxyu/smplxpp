@@ -4,21 +4,21 @@
 //    options: S H X (SMPL SMPL-H SMPL-X)
 // 2. sequence (AMASS .npz) path. If not specified,
 //    opens a blank viewer with option to browse and load a npz
-#include <iostream>
+#include <Eigen/Geometry>
 #include <algorithm>
 #include <chrono>
-#include <Eigen/Geometry>
+#include <iostream>
 
-#include "smplx/smplx.hpp"
-#include "smplx/sequence.hpp"
-#include "smplx/util.hpp"
+#include "imfilebrowser.h"
 #include "meshview/meshview.hpp"
 #include "meshview/meshview_imgui.hpp"
-#include "imfilebrowser.h"
+#include "smplx/sequence.hpp"
+#include "smplx/smplx.hpp"
+#include "smplx/util.hpp"
 
 using namespace smplx;
 
-template<class ModelConfig>
+template <class ModelConfig>
 static int run(std::string path) {
     SequenceAMASS amass(path);
     Gender gender = amass.gender;
@@ -37,35 +37,41 @@ static int run(std::string path) {
     // * Set up meshview viewer
     meshview::Viewer viewer;
 
-    auto& smpl_mesh = viewer.add_mesh(body.verts(), model.faces, 0.8f, 0.5f, 0.6f);
+    auto& smpl_mesh =
+        viewer.add_mesh(body.verts(), model.faces, 0.8f, 0.5f, 0.6f);
     // For some reason, all AMASS dada are rotated 90 degs CCW on x-axis;
     // we undo this rotation using the model matrix
-    smpl_mesh.rotate(Eigen::AngleAxisf(
-                    M_PI * .5f, Eigen::Vector3f(-1.f, 0.f, 0.f)).toRotationMatrix());
+    smpl_mesh.rotate(
+        Eigen::AngleAxisf(M_PI * .5f, Eigen::Vector3f(-1.f, 0.f, 0.f))
+            .toRotationMatrix());
 
-    viewer.draw_axes = true; // Press a to hide axes
+    viewer.draw_axes = true;  // Press a to hide axes
     auto center_camera_on_human = [&]() {
         // Set camera's center of rotation to transformed root joint
         viewer.camera.center_of_rot = (/* model matrix */ smpl_mesh.transform *
-            /* deformed root joint */ body.joints().row(0).transpose().homogeneous())
-                    .template head<3>();
+                                       /* deformed root joint */ body.joints()
+                                           .row(0)
+                                           .transpose()
+                                           .homogeneous())
+                                          .template head<3>();
     };
-    viewer.camera.dist_to_center = 4.f; // Zoom out a little
+    viewer.camera.dist_to_center = 4.f;  // Zoom out a little
     center_camera_on_human();
 
     // * Animation state
-    int frame = 0; // Current frame
-    int frame_start = 0; // Frame when we started animating
-    std::chrono::high_resolution_clock::time_point time_start; // Time when we started anim
+    int frame = 0;        // Current frame
+    int frame_start = 0;  // Frame when we started animating
+    std::chrono::high_resolution_clock::time_point
+        time_start;  // Time when we started anim
     bool playing = false;
-    bool camera_follow_human = true; // Whether to automatically follow the human
+    bool camera_follow_human =
+        true;  // Whether to automatically follow the human
 
     bool updated;
 
     // Copy AMASS frame 'frame' to body and update mesh + (optionally) camera
     auto update_frame = [&]() {
-        if (amass.n_frames == 0)
-            return; // Empty sequence
+        if (amass.n_frames == 0) return;  // Empty sequence
         amass.set_pose(body, (size_t)frame);
         body.update();
         smpl_mesh.verts_pos().noalias() = body.verts();
@@ -90,7 +96,8 @@ static int run(std::string path) {
     };
 
     // Set key handler
-    viewer.on_key = [&](int key, meshview::input::Action action, int mods) -> bool {
+    viewer.on_key = [&](int key, meshview::input::Action action,
+                        int mods) -> bool {
         if (action == meshview::input::Action::press) {
             if (key == 'R') {
                 frame_start = 0;
@@ -104,14 +111,17 @@ static int run(std::string path) {
         }
         return true;
     };
-    viewer.on_open = [](){ ImGui::GetIO().IniFilename = nullptr; };
+    viewer.on_open = []() { ImGui::GetIO().IniFilename = nullptr; };
     viewer.on_loop = [&]() {
         updated = false;
         if (playing) {
-            double delta = std::chrono::duration<double>(
-                    std::chrono::high_resolution_clock::now() - time_start).count();
-            int nx_frame = static_cast<int>(std::floor(delta * amass.frame_rate))
-                                 + frame_start;
+            double delta =
+                std::chrono::duration<double>(
+                    std::chrono::high_resolution_clock::now() - time_start)
+                    .count();
+            int nx_frame =
+                static_cast<int>(std::floor(delta * amass.frame_rate)) +
+                frame_start;
             if (nx_frame > frame) {
                 if (nx_frame >= amass.n_frames) {
                     playing = false;
@@ -128,18 +138,19 @@ static int run(std::string path) {
         updated = false;
         static ImGui::FileBrowser open_file_dialog;
         if (open_file_dialog.GetTitle().empty()) {
-            open_file_dialog.SetTypeFilters({ ".npz" });
+            open_file_dialog.SetTypeFilters({".npz"});
             open_file_dialog.SetTitle("Open AMASS npz");
         }
         ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
         ImGui::SetNextWindowSize(ImVec2(300, 180), ImGuiCond_Once);
         ImGui::Begin("Control", NULL);
         ImGui::Text("Model: %s  Gender: %s", model.name(),
-                util::gender_to_str(model.gender));
+                    util::gender_to_str(model.gender));
         if (amass.n_frames) {
             ImGui::TextWrapped("Seq: %s", path.c_str());
             ImGui::Text("Frame %i (%i total)", frame, (int)amass.n_frames);
-            if (ImGui::SliderInt("Frame##framectl", &frame, 0, (int)amass.n_frames - 1)) {
+            if (ImGui::SliderInt("Frame##framectl", &frame, 0,
+                                 (int)amass.n_frames - 1)) {
                 frame_start = frame;
                 if (playing)
                     time_start = std::chrono::high_resolution_clock::now();
@@ -156,8 +167,9 @@ static int run(std::string path) {
             }
             ImGui::SameLine();
         } else {
-            ImGui::TextWrapped("Please click 'Open AMASS npz' and select a file. "
-                    "Ignore the current camera angle, it will be correct on open.");
+            ImGui::TextWrapped(
+                "Please click 'Open AMASS npz' and select a file. "
+                "Ignore the current camera angle, it will be correct on open.");
         }
         if (ImGui::Button("Open AMASS npz")) {
             frame = frame_start = 0;
@@ -168,10 +180,10 @@ static int run(std::string path) {
             open_file_dialog.Open();
         }
         ImGui::Checkbox("Camera follows human", &camera_follow_human);
-        ImGui::End(); // Control
+        ImGui::End();  // Control
 
         open_file_dialog.Display();
-        if(open_file_dialog.HasSelected()) {
+        if (open_file_dialog.HasSelected()) {
             // Load new sequence
             path = open_file_dialog.GetSelected().string();
             amass.load(path);
