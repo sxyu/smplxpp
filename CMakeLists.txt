@@ -155,7 +155,7 @@ if (ZLIB_FOUND)
 else()
     message( STATUS "Using included zlib." )
     add_subdirectory(${ZLIB_DIR})
-    include_directories(${ZLIB_DIR}/include)
+    include_directories(${ZLIB_DIR})
     set( DEPENDENCIES ${DEPENDENCIES} zlibstatic )
 endif()
 
