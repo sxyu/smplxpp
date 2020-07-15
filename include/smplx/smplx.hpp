@@ -8,8 +8,9 @@
 #include <string>
 #include <vector>
 
-#define __SMPLX_MEMBER_ACCESSOR(name, body) inline auto name() {return body;} \
-        inline auto name() const {return body;}
+#define __SMPLX_MEMBER_ACCESSOR(name, body) \
+    inline auto name() { return body; }     \
+    inline auto name() const { return body; }
 
 namespace smplx {
 #ifdef SMPLX_CUDA_ENABLED
@@ -26,19 +27,19 @@ struct GPUSparseMatrix {
 
 /** Represents a generic SMPL human model
  *  This defines the pose/shape of an avatar and cannot be manipulated or viewed
- *  ModelConfig: static 'model configuration', pick from smplx::model_config::SMPL/SMPLH/SMPLX*/
-template<class ModelConfig>
+ *  ModelConfig: static 'model configuration', pick from
+ * smplx::model_config::SMPL/SMPLH/SMPLX*/
+template <class ModelConfig>
 class Model {
-public:
+   public:
     // Construct from .npz at default path for given gender
     explicit Model(Gender gender = Gender::neutral);
 
     // Construct from .npz at path (standard SMPL-X npz format)
     // path: .npz model path, in data/models/smplx/*.npz
-    // uv_path: UV map information path, see data/models/smplx/uv.txt for an example
-    // gender: records gender of model. For informational purposes only.
-    explicit Model(const std::string& path,
-                   const std::string& uv_path = "",
+    // uv_path: UV map information path, see data/models/smplx/uv.txt for an
+    // example gender: records gender of model. For informational purposes only.
+    explicit Model(const std::string& path, const std::string& uv_path = "",
                    Gender gender = Gender::unknown);
     ~Model();
 
@@ -47,14 +48,13 @@ public:
     void load(Gender gender = Gender::neutral);
     // Load from .npz at path (standard SMPL-X npz format)
     // path: .npz model path, in data/models/smplx/*.npz
-    // uv_path: UV map information path, see data/models/smplx/uv.txt for an example
-    // gender: records gender of model. For informational purposes only.
-    void load(const std::string& path,
-                   const std::string& uv_path = "",
-                   Gender new_gender = Gender::unknown);
+    // uv_path: UV map information path, see data/models/smplx/uv.txt for an
+    // example gender: records gender of model. For informational purposes only.
+    void load(const std::string& path, const std::string& uv_path = "",
+              Gender new_gender = Gender::unknown);
 
-    Model& operator=(const Model& other) =delete;
-    Model& operator=(Model&& other) =delete;
+    Model& operator=(const Model& other) = delete;
+    Model& operator=(Model&& other) = delete;
 
     // Returns true if has UV map
     inline bool has_uv_map() const { return _n_uv_verts > 0; }
@@ -75,14 +75,22 @@ public:
     // Total number of joints = n_explicit_joints + n_hand_pca_joints * 2
     static constexpr size_t n_joints() { return Config::n_joints(); }
     // Number of explicit joint parameters stored as angle-axis
-    static constexpr size_t n_explicit_joints() { return Config::n_explicit_joints(); }
+    static constexpr size_t n_explicit_joints() {
+        return Config::n_explicit_joints();
+    }
     // Number of joints per hand implicit computed from PCA
-    static constexpr size_t n_hand_pca_joints() { return Config::n_hand_pca_joints(); }
+    static constexpr size_t n_hand_pca_joints() {
+        return Config::n_hand_pca_joints();
+    }
 
     // Total number of blend shapes = n_shape_blends + n_pose_blends
-    static constexpr size_t n_blend_shapes() { return Config::n_blend_shapes(); }
+    static constexpr size_t n_blend_shapes() {
+        return Config::n_blend_shapes();
+    }
     // Number of shape-dep blend shapes, including body and face
-    static constexpr size_t n_shape_blends() { return Config::n_shape_blends(); }
+    static constexpr size_t n_shape_blends() {
+        return Config::n_shape_blends();
+    }
     // Number of pose-dep blend shapes = 9 * (n_joints - 1)
     static constexpr size_t n_pose_blends() { return Config::n_pose_blends(); }
 
@@ -95,16 +103,20 @@ public:
     // Model name
     static constexpr const char* name() { return Config::model_name; }
     // Joint names name
-    static constexpr const char* joint_name(size_t joint) { return Config::joint_name[joint]; }
+    static constexpr const char* joint_name(size_t joint) {
+        return Config::joint_name[joint];
+    }
     // Parent joint
-    static constexpr size_t parent(size_t joint) { return Config::parent[joint]; }
+    static constexpr size_t parent(size_t joint) {
+        return Config::parent[joint];
+    }
 
     // Model gender, may be unknown
     Gender gender;
 
     // ** DATA **
     // Kinematic tree: joint children
-    std::vector<std::vector<size_t> > children;
+    std::vector<std::vector<size_t>> children;
 
     // Points in the initial mesh, (#verts, 3)
     Points verts;
@@ -117,7 +129,7 @@ public:
 
     // Shape-dependent blend shapes, (3*#joints, #shape blends + #pose blends)
     // each col represents a point cloud (#joints, 3) in row-major order
-    Eigen::Matrix<Scalar, Eigen::Dynamic, n_blend_shapes()> blend_shapes;
+    Eigen::Matrix<Scalar, Eigen::Dynamic, Model::n_blend_shapes()> blend_shapes;
 
     // Joint regressor: verts -> joints, (#joints, #verts)
     SparseMatrix joint_reg;
@@ -147,14 +159,15 @@ public:
         internal::GPUSparseMatrix joint_reg;
         float* joint_reg_dense;
         internal::GPUSparseMatrix weights;
-        float* hand_comps_l = nullptr, * hand_comps_r = nullptr;
-        float* hand_mean_l = nullptr, * hand_mean_r = nullptr;
+        float *hand_comps_l = nullptr, *hand_comps_r = nullptr;
+        float *hand_mean_l = nullptr, *hand_mean_r = nullptr;
     } device;
-private:
+
+   private:
     void _cuda_load();
     void _cuda_free();
 #else
-private:
+   private:
 #endif
     // Number UV vertices (may be more than n_verts due to seams)
     // 0 if UV not available
@@ -171,9 +184,9 @@ using ModelXpca = Model<model_config::SMPLXpca>;
 
 // A particular SMPL instance, with pose/shape/hand parameters.
 // Includes parameter vector + cloud data
-template<class ModelConfig>
+template <class ModelConfig>
 class Body {
-public:
+   public:
     // Construct body from model
     // set_zero: set to false to leave parameter array uninitialized
     explicit Body(const Model<ModelConfig>& model, bool set_zero = true);
@@ -181,8 +194,8 @@ public:
 
     // Perform LBS and output verts
     // enable_pose_blendshapes: if false, disables pose blendshapes;
-    //                          this provides a significant speedup at the cost of
-    //                          worse accuracy
+    //                          this provides a significant speedup at the cost
+    //                          of worse accuracy
     void update(bool force_cpu = false, bool enable_pose_blendshapes = true);
 
     // Save as obj file
@@ -194,13 +207,22 @@ public:
     // Base position (translation)
     __SMPLX_MEMBER_ACCESSOR(trans, params.template head<3>());
     // Pose (angle-axis)
-    __SMPLX_MEMBER_ACCESSOR(pose, params.template segment<ModelConfig::n_explicit_joints() * 3>(3));
+    __SMPLX_MEMBER_ACCESSOR(
+        pose, params.template segment<ModelConfig::n_explicit_joints() * 3>(3));
     // Hand principal component weights
-    __SMPLX_MEMBER_ACCESSOR(hand_pca, params.segment<ModelConfig::n_hand_pca() * 2>(3 + 3 * model.n_explicit_joints()));
-    __SMPLX_MEMBER_ACCESSOR(hand_pca_l, params.template segment<ModelConfig::n_hand_pca()>(3 + 3 * model.n_explicit_joints()));
-    __SMPLX_MEMBER_ACCESSOR(hand_pca_r, params.template segment<ModelConfig::n_hand_pca()>(3 + 3 * model.n_explicit_joints() + model.n_hand_pca()));
+    __SMPLX_MEMBER_ACCESSOR(hand_pca,
+                            params.segment<ModelConfig::n_hand_pca() * 2>(
+                                3 + 3 * model.n_explicit_joints()));
+    __SMPLX_MEMBER_ACCESSOR(hand_pca_l,
+                            params.template segment<ModelConfig::n_hand_pca()>(
+                                3 + 3 * model.n_explicit_joints()));
+    __SMPLX_MEMBER_ACCESSOR(hand_pca_r,
+                            params.template segment<ModelConfig::n_hand_pca()>(
+                                3 + 3 * model.n_explicit_joints() +
+                                model.n_hand_pca()));
     // Shape params
-    __SMPLX_MEMBER_ACCESSOR(shape, params.template tail<ModelConfig::n_shape_blends()>());
+    __SMPLX_MEMBER_ACCESSOR(
+        shape, params.template tail<ModelConfig::n_shape_blends()>());
 
     // * OUTPUTS accessors
     // Get deformed body vertices, in same order as model.verts;
@@ -224,7 +246,7 @@ public:
     // Parameters vector
     Vector params;
 
-private:
+   private:
     // * OUTPUTS generated by update
     // Deformed vertices (only shape applied); not available in case of GPU
     // (only device.verts_shaped)
@@ -237,7 +259,8 @@ private:
     Points _joints_shaped;
 
     // Homogeneous transforms at each joint (bottom row omitted)
-    Eigen::Matrix<Scalar, Eigen::Dynamic, 12, Eigen::RowMajor> _joint_transforms;
+    Eigen::Matrix<Scalar, Eigen::Dynamic, 12, Eigen::RowMajor>
+        _joint_transforms;
 
     // Deformed joints (shape and pose applied)
     mutable Points _joints;
@@ -249,7 +272,7 @@ private:
     void _local_to_global();
 
 #ifdef SMPLX_CUDA_ENABLED
-public:
+   public:
     struct {
         float* verts = nullptr;
         float* verts_shaped = nullptr;
@@ -262,7 +285,7 @@ public:
         float* joint_transforms = nullptr;
     } device;
 
-private:
+   private:
     // True if latest deformed vertices constructed by update()
     // have been retrieved to main memory
     mutable bool _verts_retrieved;
@@ -272,10 +295,8 @@ private:
     void _cuda_load();
     void _cuda_free();
     void _cuda_maybe_retrieve_verts() const;
-    void _cuda_update(
-            float * h_blendshape_params,
-            float * h_joint_transforms,
-            bool enable_pose_blendshapes = true);
+    void _cuda_update(float* h_blendshape_params, float* h_joint_transforms,
+                      bool enable_pose_blendshapes = true);
 #endif
 };
 // SMPL Body
@@ -287,6 +308,6 @@ using BodyX = Body<model_config::SMPLX>;
 // SMPL-X Body with hand PCA
 using BodyXpca = Body<model_config::SMPLXpca>;
 
-}  // namespace smpl
+}  // namespace smplx
 
 #endif  // ifndef SMPLX_SMPLX_3F77A808_CB46_4AF6_A5FD_70CF554F8871
