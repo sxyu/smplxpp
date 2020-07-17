@@ -160,7 +160,8 @@ else()
 endif()
 
 SET(MESHVIEW_BUILD_EXAMPLE OFF CACHE BOOL "meshview example" FORCE)
-SET(Eigen3_DIR '${VENDOR_DIR}/eigen/cmake' CACHE BOOL "eigen dir" FORCE)
+SET(MESHVIEW_USE_SYSTEM_EIGEN OFF CACHE BOOL "system eigen" FORCE)
+SET(EIGEN_INCLUDE_DIR '${EIGEN_DIR}' CACHE BOOL "eigen directory" FORCE)
 add_subdirectory(${MESHVIEW_DIR})
 
 #Link cuda libraries
