@@ -159,10 +159,12 @@ else()
     set( DEPENDENCIES ${DEPENDENCIES} zlibstatic )
 endif()
 
-SET(MESHVIEW_BUILD_EXAMPLE OFF CACHE BOOL "meshview example" FORCE)
-SET(MESHVIEW_USE_SYSTEM_EIGEN OFF CACHE BOOL "system eigen" FORCE)
-SET(EIGEN_INCLUDE_DIR '${EIGEN_DIR}' CACHE BOOL "eigen directory" FORCE)
-add_subdirectory(${MESHVIEW_DIR})
+if ( SMPLX_BUILD_VIEWER )
+    SET(MESHVIEW_BUILD_EXAMPLE OFF CACHE BOOL "meshview example" FORCE)
+    SET(MESHVIEW_USE_SYSTEM_EIGEN OFF CACHE BOOL "system eigen" FORCE)
+    SET(EIGEN_INCLUDE_DIR '${EIGEN_DIR}' CACHE BOOL "eigen directory" FORCE)
+    add_subdirectory(${MESHVIEW_DIR})
+endif()
 
 #Link cuda libraries
 # if (SMPLX_USE_CUDA)
