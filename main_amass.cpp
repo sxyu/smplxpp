@@ -39,8 +39,8 @@ static int run(std::string path) {
 
     auto& smpl_mesh =
         viewer.add_mesh(body.verts(), model.faces, 0.8f, 0.5f, 0.6f);
-    // For some reason, all AMASS dada are rotated 90 degs CCW on x-axis;
-    // we undo this rotation using the model matrix
+    // Due to different coordinate system, all AMASS dada are rotated 90 degs
+    // CCW on x-axis; we undo this rotation using the model matrix
     smpl_mesh.rotate(
         Eigen::AngleAxisf(M_PI * .5f, Eigen::Vector3f(-1.f, 0.f, 0.f))
             .toRotationMatrix());

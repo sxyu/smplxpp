@@ -5,7 +5,7 @@
 // 2. model gender, default NEUTRAL
 //    options: NEUTRAL MALE FEMALE (case insensitive)
 // 3. cpu or gpu. default gpu (i.e. use gpu where available)
-// 3. whether to enable pose blendshapes. on or off. default on
+// 4. whether to enable pose blendshapes. on or off. default on
 //    note pose blendshapes are very slow.
 #include <algorithm>
 #include <iostream>

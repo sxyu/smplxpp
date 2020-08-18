@@ -14,31 +14,40 @@ namespace {
 using util::assert_shape;
 }  // namespace
 
-template<class ModelConfig>
+template <class ModelConfig>
 Model<ModelConfig>::Model(Gender gender) {
     load(gender);
 }
 
-template<class ModelConfig>
-Model<ModelConfig>::Model(const std::string& path, const std::string& uv_path, Gender gender) {
+template <class ModelConfig>
+Model<ModelConfig>::Model(const std::string& path, const std::string& uv_path,
+                          Gender gender) {
     load(path, uv_path, gender);
 }
 
-template<class ModelConfig>
-void Model<ModelConfig>::load(Gender gender) {
-    load(util::find_data_file(std::string(ModelConfig::default_path_prefix) +
-                    util::gender_to_str(gender) + ".npz"),
-                util::find_data_file(ModelConfig::default_uv_path),
-                gender);
+template <class ModelConfig>
+Model<ModelConfig>::~Model() {
+#ifdef SMPLX_CUDA_ENABLED
+    _cuda_free();
+#endif
 }
 
-template<class ModelConfig>
-void Model<ModelConfig>::load(const std::string& path, const std::string& uv_path,
-        Gender new_gender) {
+template <class ModelConfig>
+void Model<ModelConfig>::load(Gender gender) {
+    load(util::find_data_file(std::string(ModelConfig::default_path_prefix) +
+                              util::gender_to_str(gender) + ".npz"),
+         util::find_data_file(ModelConfig::default_uv_path), gender);
+}
+
+template <class ModelConfig>
+void Model<ModelConfig>::load(const std::string& path,
+                              const std::string& uv_path, Gender new_gender) {
     gender = new_gender;
     if (!std::ifstream(path)) {
-        std::cerr << "ERROR: Model '" << path << "' does not exist, "
-            "did you download the model following instructions in data/models/README.md?\n";
+        std::cerr << "ERROR: Model '" << path
+                  << "' does not exist, "
+                     "did you download the model following instructions in "
+                     "data/models/README.md?\n";
         std::exit(1);
     }
     cnpy::npz_t npz = cnpy::npz_load(path);
@@ -53,6 +62,7 @@ void Model<ModelConfig>::load(const std::string& path, const std::string& uv_pat
     const auto& verts_raw = npz.at("v_template");
     assert_shape(verts_raw, {n_verts(), 3});
     verts.noalias() = util::load_float_matrix(verts_raw, n_verts(), 3);
+    verts_load.noalias() = verts;
 
     // Load triangle mesh
     const auto& faces_raw = npz.at("f");
@@ -63,7 +73,8 @@ void Model<ModelConfig>::load(const std::string& path, const std::string& uv_pat
     const auto& jreg_raw = npz.at("J_regressor");
     assert_shape(jreg_raw, {n_joints(), n_verts()});
     joint_reg.resize(n_joints(), n_verts());
-    joint_reg = util::load_float_matrix(jreg_raw, n_joints(), n_verts()).sparseView();
+    joint_reg =
+        util::load_float_matrix(jreg_raw, n_joints(), n_verts()).sparseView();
     joints = joint_reg * verts;
     joint_reg.makeCompressed();
 
@@ -71,7 +82,8 @@ void Model<ModelConfig>::load(const std::string& path, const std::string& uv_pat
     const auto& wt_raw = npz.at("weights");
     assert_shape(wt_raw, {n_verts(), n_joints()});
     weights.resize(n_verts(), n_joints());
-    weights = util::load_float_matrix(wt_raw, n_verts(), n_joints()).sparseView();
+    weights =
+        util::load_float_matrix(wt_raw, n_verts(), n_joints()).sparseView();
     weights.makeCompressed();
 
     blend_shapes.resize(3 * n_verts(), n_blend_shapes());
@@ -106,10 +118,14 @@ void Model<ModelConfig>::load(const std::string& path, const std::string& uv_pat
         hand_mean_l = util::load_float_matrix(hml_raw, n_hand_params, 1);
         hand_mean_r = util::load_float_matrix(hmr_raw, n_hand_params, 1);
 
-        hand_comps_l = util::load_float_matrix(hcl_raw, n_hand_params, n_hand_params)
-                           .topRows(n_hand_pca()).transpose();
-        hand_comps_r = util::load_float_matrix(hcr_raw, n_hand_params, n_hand_params)
-                           .topRows(n_hand_pca()).transpose();
+        hand_comps_l =
+            util::load_float_matrix(hcl_raw, n_hand_params, n_hand_params)
+                .topRows(n_hand_pca())
+                .transpose();
+        hand_comps_r =
+            util::load_float_matrix(hcr_raw, n_hand_params, n_hand_params)
+                .topRows(n_hand_pca())
+                .transpose();
     }
 
     // Maybe load UV (UV mapping WIP)
@@ -121,7 +137,8 @@ void Model<ModelConfig>::load(const std::string& path, const std::string& uv_pat
                 // _SMPLX_ASSERT_LE(n_verts(), _n_uv_verts);
                 // Load the uv data
                 uv.resize(_n_uv_verts, 2);
-                for (size_t i = 0; i < _n_uv_verts; ++i) ifs >> uv(i, 0) >> uv(i, 1);
+                for (size_t i = 0; i < _n_uv_verts; ++i)
+                    ifs >> uv(i, 0) >> uv(i, 1);
                 _SMPLX_ASSERT(ifs);
                 uv_faces.resize(n_faces(), 3);
                 for (size_t i = 0; i < n_faces(); ++i) {
@@ -141,13 +158,10 @@ void Model<ModelConfig>::load(const std::string& path, const std::string& uv_pat
 #endif
 }
 
-template<class ModelConfig>
-Model<ModelConfig>::~Model() {
-#ifdef SMPLX_CUDA_ENABLED
-    _cuda_free();
-#endif
+template <class ModelConfig>
+void Model<ModelConfig>::set_deformations(const Eigen::Ref<const Points>& d) {
+    verts.noalias() = verts_load + d;
 }
-
 
 // Instantiations
 template class Model<model_config::SMPL>;

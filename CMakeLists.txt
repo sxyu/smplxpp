@@ -93,7 +93,7 @@ if(NOT EXISTS "${MESHVIEW_DIR}/CMakeLists.txt")
 endif()
 
 file(GLOB_RECURSE SOURCES ${SRC_DIR}/*.cpp)
-file(GLOB_RECURSE HEADERS ${INCLUDE_DIR}/smplx/*.cpp)
+file(GLOB_RECURSE HEADERS ${INCLUDE_DIR}/smplx/*.hpp)
 
 file(GLOB IMGUI_SOURCES ${IMGUI_DIR}/*.cpp)
 
@@ -200,6 +200,11 @@ if ( SMPLX_BUILD_VIEWER )
     set_target_properties( amass PROPERTIES OUTPUT_NAME "smplx-amass" )
     install(TARGETS amass DESTINATION bin)
 endif( SMPLX_BUILD_VIEWER )
+
+add_executable( prox main_proximity.cpp )
+target_link_libraries( prox meshview ${PROJ_NAME} )
+set_target_properties( prox PROPERTIES OUTPUT_NAME "smplx-prox" )
+install(TARGETS prox DESTINATION bin)
 
 if ( MSVC )
     #set_property(TARGET ${PROJ_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG /LTCG )

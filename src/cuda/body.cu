@@ -171,9 +171,9 @@ SMPLX_HOST void Body<ModelConfig>::_cuda_update(
     cudaCheck(cudaMemcpyAsync(device.blendshape_params, h_blendshape_params,
                 model.n_blend_shapes() * sizeof(float),
                cudaMemcpyHostToDevice));
-    cudaCheck(cudaMemcpyAsync(device.joint_transforms, h_joint_transforms,
-                model.n_joints() * 12 * sizeof(float),
-               cudaMemcpyHostToDevice));
+    // cudaCheck(cudaMemcpyAsync(device.joint_transforms, h_joint_transforms,
+    //             model.n_joints() * 12 * sizeof(float),
+    //            cudaMemcpyHostToDevice));
     // Blend shapes
     if (enable_pose_blendshapes) {
         cudaMemcpyAsync(device.verts_shaped, model.device.verts,
@@ -198,11 +198,11 @@ SMPLX_HOST void Body<ModelConfig>::_cuda_update(
     // Compute global joint transforms, this part can't be parallized and
     // is horribly slow on GPU; we do it on CPU instead
     // Actually, this is pretty bad too, TODO try implementing on GPU again
-    cudaMemcpy(_joints_shaped.data(), device.joints_shaped, model.n_joints() * 3 * sizeof(float),
-               cudaMemcpyDeviceToHost);
+    cudaCheck(cudaMemcpyAsync(_joints_shaped.data(), device.joints_shaped, model.n_joints() * 3 * sizeof(float),
+               cudaMemcpyDeviceToHost));
     _local_to_global();
-    cudaMemcpyAsync(device.joint_transforms, _joint_transforms.data(),
-            _joint_transforms.size() * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheck(cudaMemcpyAsync(device.joint_transforms, _joint_transforms.data(),
+            _joint_transforms.size() * sizeof(float), cudaMemcpyHostToDevice));
 
     // weights: (#verts, #joints)
     device::lbs<<<(model.verts.size() - 1) / BLOCK_SIZE + 1, BLOCK_SIZE>>>(

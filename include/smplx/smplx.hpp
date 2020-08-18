@@ -25,24 +25,37 @@ struct GPUSparseMatrix {
 }  // namespace internal
 #endif
 
-/** Represents a generic SMPL human model
- *  This defines the pose/shape of an avatar and cannot be manipulated or viewed
- *  ModelConfig: static 'model configuration', pick from
- * smplx::model_config::SMPL/SMPLH/SMPLX*/
+/** Represents a generic SMPL-like human model.
+ *  This contains the base shape/mesh/LBS weights of a SMPL-type
+ *  model and handles loading from a standard SMPL-X npz file.
+ *
+ *  The loaded model can be passed to the Body<ModelConfig> class constructor.
+ *  The Body class  can then generate a skinned human mesh from parameters using
+ *  the model's data.
+ *
+ *  template arg ModelConfig is the static 'model configuration', which you
+ *  should pick from smplx::model_config::SMPL/SMPLH/SMPLX */
 template <class ModelConfig>
 class Model {
    public:
-    // Construct from .npz at default path for given gender
+    // Construct from .npz at default path for given gender, in
+    // data/models/modelname/MODELNAME_GENDER.npz
     explicit Model(Gender gender = Gender::neutral);
 
     // Construct from .npz at path (standard SMPL-X npz format)
-    // path: .npz model path, in data/models/smplx/*.npz
+    // path: .npz model path, e.g. data/models/smplx/*.npz
     // uv_path: UV map information path, see data/models/smplx/uv.txt for an
     // example gender: records gender of model. For informational purposes only.
     explicit Model(const std::string& path, const std::string& uv_path = "",
                    Gender gender = Gender::unknown);
+    // Destructor
     ~Model();
 
+    // Disable copy/move assignment
+    Model& operator=(const Model& other) = delete;
+    Model& operator=(Model&& other) = delete;
+
+    /*** MODEL NPZ LOADING ***/
     // Load from .npz at default path for given gender
     // useful for dynamically switching genders
     void load(Gender gender = Gender::neutral);
@@ -53,24 +66,19 @@ class Model {
     void load(const std::string& path, const std::string& uv_path = "",
               Gender new_gender = Gender::unknown);
 
-    Model& operator=(const Model& other) = delete;
-    Model& operator=(Model&& other) = delete;
-
-    // Returns true if has UV map
-    inline bool has_uv_map() const { return _n_uv_verts > 0; }
+    /*** MODEL MANIPULATION ***/
+    // Set model deformations: verts := verts_load + d
+    void set_deformations(const Eigen::Ref<const Points>& d);
 
     using Config = ModelConfig;
 
-    // DATA SHAPE INFO (shorthand) from ModelConfig
+    /*** STATIC DATA SHAPE INFO SHORTHANDS,
+     *   mostly forwarding to ModelConfig ***/
 
     // Number of vertices in model
     static constexpr size_t n_verts() { return Config::n_verts(); }
     // Number of faces in model
     static constexpr size_t n_faces() { return Config::n_faces(); }
-    // Number UV vertices (may be more than n_verts due to seams)
-    // 0 if UV not available
-    // NOTE: not static or a constexpr
-    inline size_t n_uv_verts() { return _n_uv_verts; }
 
     // Total number of joints = n_explicit_joints + n_hand_pca_joints * 2
     static constexpr size_t n_joints() { return Config::n_joints(); }
@@ -100,6 +108,12 @@ class Model {
     // Total number of params = 3 + 3 * n_body_joints + 2 * n_hand_pca +
     static constexpr size_t n_params() { return Config::n_params(); }
 
+    // Number UV vertices (may be more than n_verts due to seams)
+    // 0 if UV not available
+    // NOTE: not static or a constexpr
+    inline size_t n_uv_verts() { return _n_uv_verts; }
+
+    /*** ADDITIONAL MODEL INFORMATION ***/
     // Model name
     static constexpr const char* name() { return Config::model_name; }
     // Joint names name
@@ -111,15 +125,23 @@ class Model {
         return Config::parent[joint];
     }
 
-    // Model gender, may be unknown
+    // Model gender, may be unknown.
     Gender gender;
 
-    // ** DATA **
+    // Returns true if has UV map.
+    // Note: not static, since we allow UV map variation among model instances.
+    inline bool has_uv_map() const { return _n_uv_verts > 0; }
+
+    /*** MODEL DATA ***/
     // Kinematic tree: joint children
     std::vector<std::vector<size_t>> children;
 
-    // Points in the initial mesh, (#verts, 3)
+    // Vertices in the unskinned mesh, (#verts, 3).
+    // This is verts_load with deformations (set with set_deformations).
     Points verts;
+
+    // Vertices in the initial loaded mesh, (#verts, 3)
+    Points verts_load;
 
     // Triangles in the mesh, (#faces, 3)
     Triangles faces;
@@ -127,17 +149,18 @@ class Model {
     // Initial joint positions
     Points joints;
 
-    // Shape-dependent blend shapes, (3*#joints, #shape blends + #pose blends)
-    // each col represents a point cloud (#joints, 3) in row-major order
+    // Shape-dependent blend shapes, (3*#verts, #shape blends + #pose blends)
+    // each col represents a point cloud (#verts, 3) in row-major order
     Eigen::Matrix<Scalar, Eigen::Dynamic, Model::n_blend_shapes()> blend_shapes;
 
     // Joint regressor: verts -> joints, (#joints, #verts)
     SparseMatrix joint_reg;
 
-    // LBS weights, (#verts, #joints)
+    // LBS weights, (#verts, #joints).
+    // NOTE: this is ColMajor because I notice a speedup while profiling
     SparseMatrixColMajor weights;
 
-    // ** Hand PCA data **
+    /*** Hand PCA data ***/
     // Hand PCA comps: pca -> joint pos delta
     // 3*#hand joints (=45) * #hand pca
     // columns are PC's
@@ -145,14 +168,14 @@ class Model {
     // Hand PCA means: mean pos of 3x15 hand joints
     Vector hand_mean_l, hand_mean_r;
 
-    // ** UV Data **, available if has_uv_map()
+    /*** UV Data , available if has_uv_map() ***/
     // UV coordinates, size (n_uv_verts, 2)
     Points2D uv;
     // UV triangles (indices in uv), size (n_faces, 3)
     Triangles uv_faces;
 
 #ifdef SMPLX_CUDA_ENABLED
-    // ADVANCED: GPU data pointers
+    /*** ADVANCED: GPU data pointers ***/
     struct {
         float* verts = nullptr;
         float* blend_shapes = nullptr;
@@ -182,8 +205,10 @@ using ModelX = Model<model_config::SMPLX>;
 // SMPL-X Model with hand PCA
 using ModelXpca = Model<model_config::SMPLXpca>;
 
-// A particular SMPL instance, with pose/shape/hand parameters.
-// Includes parameter vector + cloud data
+/** A particular SMPL instance constructed from a Model<ModelConfig>,
+ *  storing pose/shape/hand parameters and a skinned point cloud generated
+ *  from the parameters (via calling the update method).
+ *  Implements linear blend skinning with GPU and CPU (Eigen) support. */
 template <class ModelConfig>
 class Body {
    public:
