@@ -7,6 +7,7 @@ AMASS integration included.
 ### Optional Dependencies
 - OpenGL 3+ (Required to build the viewer)
 - CUDA Toolkit with nvcc supporting C++ 14 (I have CUDA 11, not tested with earlier versions)
+- Very optional: https://www.github.com/sxyu/sdf to build 'smplx-prox', which shows a cross-section of continuous SDF values inside the SMPL model
 
 ## Getting the SMPL/SMPL+H/SMPL-X Models
 - See [data/models/README.md](https://github.com/sxyu/smplxpp/tree/master/data/models)
@@ -44,6 +45,8 @@ Note: I have built successfully on Ubuntu 20.04 and Windows 10 (VS2019). The pro
         - model may be `S/H/X`, where S means SMPL, H means SMPL+H, X means SMPL-X. Note P (hand PCA) is not available for AMASS integration. Default **H**
         - npz_path: optionally, path to AMASS .npz to load on open
         - `./smplx-amass` opens a blank viewer with option to browse for and load a npz
+- `smplx-sdf`: View SMPL SDF
+
 ## Library usage
 - TBA, refer to examples (`main_*.cpp`) for now
 
@@ -81,7 +84,7 @@ The following dependencies are included in the repo and don't need to be install
 - cnpy (for npy/npz I/O) https://github.com/rogersce/cnpy
     - zlib: needed by cnpy to read npz (uses system zlib if available)
 - Eigen *3.3.90* http://eigen.tuxfamily.org/
-    - Note this is NEWER than the latest release! The latest release seems to have issues with CUDA (?), so I vendored the version on master.
+    - Note this is NEWER than the latest release! I had problems getting 3.3.7 to work with CUDA, so I vendored the version on master. You are welcome to try again.
 - The following are used only if building viewer:
     - glew 2
     - glfw 3.3

@@ -166,7 +166,10 @@ if ( SMPLX_BUILD_VIEWER )
     add_subdirectory(${MESHVIEW_DIR})
 endif()
 
-#Link cuda libraries
+# Optional
+find_package(sdf QUIET)
+
+#Link cuda libraries (not used now)
 # if (SMPLX_USE_CUDA)
 #     set( DEPENDENCIES ${DEPENDENCIES} cublas cusparse )
 # endif()
@@ -199,17 +202,25 @@ if ( SMPLX_BUILD_VIEWER )
     target_link_libraries( amass meshview ${PROJ_NAME} )
     set_target_properties( amass PROPERTIES OUTPUT_NAME "smplx-amass" )
     install(TARGETS amass DESTINATION bin)
+
+    if (sdf_FOUND)
+        message(STATUS "Building SDF demo (experimental)")
+
+        add_executable( sdfview main_sdf.cpp )
+        target_link_libraries( sdfview meshview sdf::sdf ${PROJ_NAME} )
+        set_target_properties( sdfview PROPERTIES OUTPUT_NAME "smplx-sdf" )
+        install(TARGETS sdfview DESTINATION bin)
+    endif()
 endif( SMPLX_BUILD_VIEWER )
 
-add_executable( prox main_proximity.cpp )
-target_link_libraries( prox meshview ${PROJ_NAME} )
-set_target_properties( prox PROPERTIES OUTPUT_NAME "smplx-prox" )
-install(TARGETS prox DESTINATION bin)
-
 if ( MSVC )
-    #set_property(TARGET ${PROJ_NAME} APPEND PROPERTY LINK_FLAGS /DEBUG /LTCG )
-    set_property(TARGET viewer APPEND PROPERTY LINK_FLAGS "/DEBUG /LTCG" )
-    set_property(TARGET amass APPEND PROPERTY LINK_FLAGS "/DEBUG /LTCG" )
+    if ( SMPLX_BUILD_VIEWER )
+        set_property(TARGET viewer APPEND PROPERTY LINK_FLAGS "/DEBUG /LTCG" )
+        set_property(TARGET amass APPEND PROPERTY LINK_FLAGS "/DEBUG /LTCG" )
+        if (sdf_FOUND)
+            set_property(TARGET sdfview APPEND PROPERTY LINK_FLAGS "/DEBUG /LTCG" )
+        endif()
+    endif()
     set_property(TARGET example APPEND PROPERTY LINK_FLAGS "/DEBUG /LTCG" )
 endif ( MSVC )
 
