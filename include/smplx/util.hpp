@@ -83,7 +83,7 @@ Gender parse_gender(std::string str);  // Copy intended
 // Angle-axis to rotation matrix using custom implementation
 template <class T, int Option = Eigen::ColMajor>
 inline Eigen::Matrix<T, 3, 3, Option> rodrigues(
-    const Eigen::Ref<Eigen::Matrix<T, 3, 1>>& vec) {
+    const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& vec) {
     const T theta = vec.norm();
     const Eigen::Matrix<T, 3, 3, Option> eye =
         Eigen::Matrix<T, 3, 3, Option>::Identity();
@@ -104,7 +104,7 @@ inline Eigen::Matrix<T, 3, 3, Option> rodrigues(
 // (slightly slower than rodrigues, not useful)
 template <class T, int Option = Eigen::ColMajor>
 inline Eigen::Matrix<T, 3, 3, Option> rodrigues_eigen(
-    const Eigen::Ref<Eigen::Matrix<T, 3, 1>>& vec) {
+    const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& vec) {
     return Eigen::template AngleAxis<T>(vec.norm(), vec / vec.norm())
         .toRotationMatrix();
 }

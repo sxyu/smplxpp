@@ -24,6 +24,34 @@ Note: I have built successfully on Ubuntu 20.04 and Windows 10 (VS2019). The pro
     `cmake --build . --config Release` else
 - To install (unix only), use `sudo make install` (TODO: add CMake find module)
 
+### Python
+To install Python bindings, use `pip install .`
+You may need to
+ first install pybind11 from https://github.com/pybind/pybind11.
+Usage example:
+```python
+from smplxpp import ModelS, BodyS, SequenceAMASS
+# SMPL model. Use ModelX/BodyX for SMPL-X,
+# ModelH/BodyH for SMPL+H, ModelXpca/BodyXPca for SMPL-X with hand PCA
+model = ModelS(smplxpp.Gender.male)
+body = BodyS(model)
+
+seq = SequenceAMASS("/data/AMASS/KIT/10/RightTurn01_poses.npz")
+
+# Use sequence to pose body
+seq.set_shape(body)
+seq.set_pose(body, 10) # Frame 10
+
+# Do skinning (prefers GPU)
+body.update()
+
+print(body.verts) # vertices
+
+import trimesh
+tm = trimesh.Trimesh(body.vertices, model.faces) 
+tm.show()
+```
+
 ## Example programs
 - `smplx-example`: Writes SMPL-X model to`out.obj`
     - Usage: `./smplx-example gender` where gender (optional, case insensitive)

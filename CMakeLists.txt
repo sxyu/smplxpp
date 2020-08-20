@@ -17,7 +17,7 @@ endif (POLICY CMP0072)
 project( smplxpp )
 option( SMPLX_USE_FFAST_MATH "Enable ffast-math compiler flag, may cause numerical problems" ON )
 option( SMPLX_BUILD_VIEWER "Build OpenGL-based viewers (smplx-viewer, smplx-amass, smplx-sdf)" ON )
-option( SMPLX_BUILD_PYTHON "Build Python bindings" ON )
+option( SMPLX_BUILD_PYTHON "Build Python bindings" OFF )
 option( SMPLX_USE_SYSTEM_EIGEN "Use system Eigen rather than the included Eigen submodule if available" OFF )
 option( SMPLX_USE_CUDA "Use cuda if available" ON )
 
@@ -224,6 +224,7 @@ if ( SMPLX_BUILD_VIEWER )
 endif( SMPLX_BUILD_VIEWER )
 
 if (${pybind11_FOUND} AND ${SMPLX_BUILD_PYTHON})
+    message(STATUS "Building Python bindings")
     pybind11_add_module(pysmplxpp SHARED ${SOURCES} ${VENDOR_SOURCES} pybind.cpp)
     set_target_properties(pysmplxpp PROPERTIES OUTPUT_NAME smplxpp)
     target_include_directories(

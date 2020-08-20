@@ -161,6 +161,9 @@ void declare_model(py::module& m, const std::string& py_model_name,
              py::arg("enable_pose_blendshapes") = true)
         .def_property_readonly("verts", &BodyClass::verts,
                                "Posed vertices, available after update() call")
+        .def_property_readonly(
+            "vertices", &BodyClass::verts,
+            "Posed vertices, available after update() call (alias)")
         .def_property_readonly("joints", &BodyClass::joints,
                                "Posed joints, available after update() call")
         .def_property_readonly(
