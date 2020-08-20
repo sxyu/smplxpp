@@ -115,11 +115,6 @@ static int run(Gender gender, bool robust) {
         ImGui::TextUnformatted("Press h for help");
         ImGui::TextUnformatted("Reset: ");
         ImGui::SameLine();
-        if (ImGui::Button("Trans##ResetTrans")) {
-            body.trans().setZero();
-            update();
-        }
-        ImGui::SameLine();
         if (ImGui::Button("Pose##ResetPose")) {
             body.pose().setZero();
             update();
@@ -152,8 +147,6 @@ static int run(Gender gender, bool robust) {
         }
         ImGui::TextUnformatted("Tip: press j,k to adjust cross section");
 
-        if (ImGui::SliderFloat3("translation", body.trans().data(), -5.f, 5.f))
-            update();
         if (ImGui::TreeNode("Pose")) {
             const int STEP = 10;
             for (size_t j = 0; j < model.n_explicit_joints(); j += STEP) {

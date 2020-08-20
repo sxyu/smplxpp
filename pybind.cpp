@@ -143,6 +143,7 @@ void declare_model(py::module& m, const std::string& py_model_name,
             "Texture coord faces (n_faces, 3). Available if has_uv_map")
         .def("__repr__", [](const ModelClass& obj) {
             return std::string("<smplxpp.Model(name=") + obj.name() +
+                   ", gender=" + util::gender_to_str(obj.gender) +
                    ", n_params=" + std::to_string(obj.n_params()) +
                    ", n_verts=" + std::to_string(obj.n_verts()) +
                    ", n_joints=" + std::to_string(obj.n_joints()) +
@@ -150,9 +151,15 @@ void declare_model(py::module& m, const std::string& py_model_name,
                    ", n_shape_blends=" + std::to_string(obj.n_shape_blends()) +
                    ", has_uv=" + (obj.has_uv_map() ? "True" : "False") + ")>";
         });
-
+    using TransRefType = Eigen::Ref<Eigen::Matrix<Scalar, 3, 1>>;
     using PoseRefType = Eigen::Ref<
         Eigen::Matrix<Scalar, ModelConfig::n_explicit_joints() * 3, 1>>;
+    using HandPCARefType =
+        Eigen::Ref<Eigen::Matrix<Scalar, ModelConfig::n_hand_pca() * 2, 1>>;
+    using HandPCAHalfRefType =
+        Eigen::Ref<Eigen::Matrix<Scalar, ModelConfig::n_hand_pca(), 1>>;
+    using ShapeRefType =
+        Eigen::Ref<Eigen::Matrix<Scalar, ModelConfig::n_shape_blends(), 1>>;
 
     py::class_<BodyClass>(m, py_body_name.c_str())
         .def(py::init<const ModelClass&, bool>(), py::arg("model"),
@@ -172,11 +179,8 @@ void declare_model(py::module& m, const std::string& py_model_name,
             "The associated model instance")
         .def_readwrite("params", &BodyClass::params, "Parameters vector")
         .def_property(
-            "trans", [](BodyClass& obj) { return obj.trans(); },
-            [](BodyClass& obj,
-               const Eigen::Ref<Eigen::Matrix<Scalar, 3, 1>>& val) {
-                obj.trans() = val;
-            },
+            "trans", [](BodyClass& obj) -> TransRefType { return obj.trans(); },
+            [](BodyClass& obj, const TransRefType& val) { obj.trans() = val; },
             "Translation part of parameters vector (3)")
         .def_property(
             "pose", [](BodyClass& obj) -> PoseRefType { return obj.pose(); },
@@ -184,43 +188,46 @@ void declare_model(py::module& m, const std::string& py_model_name,
             "Pose part of parameters vector (3 * n_explicit_joints) in "
             "axis-angle")
         .def_property(
-            "hand_pca", [](BodyClass& obj) { return obj.hand_pca(); },
-            [](BodyClass& obj,
-               const Eigen::Ref<
-                   Eigen::Matrix<Scalar, ModelConfig::n_hand_pca() * 2, 1>>&
-                   val) { obj.hand_pca() = val; },
+            "hand_pca",
+            [](BodyClass& obj) -> HandPCARefType { return obj.hand_pca(); },
+            [](BodyClass& obj, const HandPCARefType& val) {
+                obj.hand_pca() = val;
+            },
             "Hand PCA part of parameters vector, for both hands (2 * "
             "n_hand_pca)")
         .def_property(
-            "hand_pca_l", [](BodyClass& obj) { return obj.hand_pca_l(); },
-            [](BodyClass& obj,
-               const Eigen::Ref<
-                   Eigen::Matrix<Scalar, ModelConfig::n_hand_pca(), 1>>& val) {
+            "hand_pca_l",
+            [](BodyClass& obj) -> HandPCAHalfRefType {
+                return obj.hand_pca_l();
+            },
+            [](BodyClass& obj, const HandPCAHalfRefType& val) {
                 obj.hand_pca_l() = val;
             },
-            "Hand PCA part of parameters vector, left hand (n_hand_pca)")
+            "Hand PCA part of parameters vector, left hand "
+            "(n_hand_pca)")
         .def_property(
-            "hand_pca_r", [](BodyClass& obj) { return obj.hand_pca_r(); },
-            [](BodyClass& obj,
-               const Eigen::Ref<
-                   Eigen::Matrix<Scalar, ModelConfig::n_hand_pca(), 1>>& val) {
+            "hand_pca_r",
+            [](BodyClass& obj) -> HandPCAHalfRefType {
+                return obj.hand_pca_r();
+            },
+            [](BodyClass& obj, const HandPCAHalfRefType& val) {
                 obj.hand_pca_r() = val;
             },
-            "Hand PCA part of parameters vector, right hand (n_hand_pca)")
+            "Hand PCA part of parameters vector, right hand "
+            "(n_hand_pca)")
         .def_property(
-            "shape", [](BodyClass& obj) { return obj.shape(); },
-            [](BodyClass& obj,
-               const Eigen::Ref<
-                   Eigen::Matrix<Scalar, ModelConfig::n_shape_blends(), 1>>&
-                   val) { obj.shape() = val; },
+            "shape", [](BodyClass& obj) -> ShapeRefType { return obj.shape(); },
+            [](BodyClass& obj, const ShapeRefType& val) { obj.shape() = val; },
             "Shape part of parameters vector (n_shape_blends)")
         .def("set_zero", &BodyClass::set_zero, "Set all parameters to 0")
         .def("set_random", &BodyClass::set_random,
-             "Set all parameters u.a.r. in  [-0.25, 0.25]. Maybe not the "
+             "Set all parameters u.a.r. in  [-0.25, 0.25]. Maybe not "
+             "the "
              "best "
              "distribution.")
         .def("__repr__", [](const BodyClass& obj) {
             return std::string("<smplxpp.Body(name=") + obj.model.name() +
+                   ", gender=" + util::gender_to_str(obj.model.gender) +
                    ", n_params=" + std::to_string(obj.model.n_params()) +
                    ", n_verts=" + std::to_string(obj.model.n_verts()) +
                    ", n_joints=" + std::to_string(obj.model.n_joints()) + ")>";
@@ -334,5 +341,7 @@ PYBIND11_MODULE(smplxpp, m) {
         .def("inv_affine", &util::inv_affine<float, Eigen::RowMajor>,
              "Affine transform in-place inversion")
         .def("inv_homogeneous", &util::inv_homogeneous<float, Eigen::RowMajor>,
-             "Rigid-body transform in-place inversion");
+             "Rigid-body transform in-place inversion")
+        .def("gender_to_str", &util::gender_to_str, "Gender enum to string")
+        .def("parse_gender", &util::parse_gender, "Gender enum from string");
 }
