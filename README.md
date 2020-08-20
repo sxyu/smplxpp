@@ -30,10 +30,10 @@ You may need to
  first install pybind11 from https://github.com/pybind/pybind11.
 Usage example:
 ```python
-from smplxpp import ModelS, BodyS, SequenceAMASS
+from smplxpp import ModelS, BodyS, SequenceAMASS, Gender
 # SMPL model. Use ModelX/BodyX for SMPL-X,
 # ModelH/BodyH for SMPL+H, ModelXpca/BodyXPca for SMPL-X with hand PCA
-model = ModelS(smplxpp.Gender.male)
+model = ModelS(Gender.male)
 body = BodyS(model)
 
 seq = SequenceAMASS("/data/AMASS/KIT/10/RightTurn01_poses.npz")
