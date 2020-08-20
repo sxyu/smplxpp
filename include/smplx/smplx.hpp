@@ -111,7 +111,7 @@ class Model {
     // Number UV vertices (may be more than n_verts due to seams)
     // 0 if UV not available
     // NOTE: not static or a constexpr
-    inline size_t n_uv_verts() { return _n_uv_verts; }
+    inline size_t n_uv_verts() const { return _n_uv_verts; }
 
     /*** ADDITIONAL MODEL INFORMATION ***/
     // Model name
@@ -149,7 +149,8 @@ class Model {
     // Initial joint positions
     Points joints;
 
-    // Shape-dependent blend shapes, (3*#verts, #shape blends + #pose blends)
+    // Shape- and pose-dependent blend shapes,
+    // (3*#verts, #shape blends + #pose blends)
     // each col represents a point cloud (#verts, 3) in row-major order
     Eigen::Matrix<Scalar, Eigen::Dynamic, Model::n_blend_shapes()> blend_shapes;
 

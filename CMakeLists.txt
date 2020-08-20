@@ -7,13 +7,17 @@ endif()
 if (POLICY CMP0048)
     cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
+if (POLICY CMP0069)
+    cmake_policy(SET CMP0069 NEW)
+endif (POLICY CMP0069)
 if (POLICY CMP0072)
     cmake_policy(SET CMP0072 NEW)
 endif (POLICY CMP0072)
 
 project( smplxpp )
 option( SMPLX_USE_FFAST_MATH "Enable ffast-math compiler flag, may cause numerical problems" ON )
-option( SMPLX_BUILD_VIEWER "Build OpenGL-based viewer" ON )
+option( SMPLX_BUILD_VIEWER "Build OpenGL-based viewers (smplx-viewer, smplx-amass, smplx-sdf)" ON )
+option( SMPLX_BUILD_PYTHON "Build Python bindings" ON )
 option( SMPLX_USE_SYSTEM_EIGEN "Use system Eigen rather than the included Eigen submodule if available" OFF )
 option( SMPLX_USE_CUDA "Use cuda if available" ON )
 
@@ -166,8 +170,14 @@ if ( SMPLX_BUILD_VIEWER )
     add_subdirectory(${MESHVIEW_DIR})
 endif()
 
-# Optional
+# Optional sxyu/sdf
 find_package(sdf QUIET)
+
+# Optional pybind11
+find_package( pybind11 )
+if (NOT pybind11_FOUND)
+    message( WARNING "pybind11 not found, Python binding is disabled. Install from https://github.com/pybind/pybind11" )
+endif()
 
 #Link cuda libraries (not used now)
 # if (SMPLX_USE_CUDA)
@@ -212,6 +222,21 @@ if ( SMPLX_BUILD_VIEWER )
         install(TARGETS sdfview DESTINATION bin)
     endif()
 endif( SMPLX_BUILD_VIEWER )
+
+if (${pybind11_FOUND} AND ${SMPLX_BUILD_PYTHON})
+    pybind11_add_module(pysmplxpp SHARED ${SOURCES} ${VENDOR_SOURCES} pybind.cpp)
+    set_target_properties(pysmplxpp PROPERTIES OUTPUT_NAME smplxpp)
+    target_include_directories(
+        pysmplxpp PUBLIC
+        $<BUILD_INTERFACE:${INCLUDE_DIR}>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    )
+    target_link_libraries(pysmplxpp PRIVATE ${DEPENDENCIES})
+    if (SMPLX_USE_CUDA)
+        set_target_properties( pysmplxpp PROPERTIES CUDA_SEPERABLE_COMPILATION ON)
+    endif()
+endif ()
 
 if ( MSVC )
     if ( SMPLX_BUILD_VIEWER )
