@@ -1,12 +1,12 @@
 ## SMPL-X
-You should have
-- `data/models/smplx/SMPLX_NEUTRAL.npz`
-- `data/models/smplx/SMPLX_MALE.npz`
-- `data/models/smplx/SMPLX_FEMALE.npz`
-
 1. Please go to http://smpl-x.is.tue.mpg.de and register
 2. In downloads, click "download SMPL-X v...".
 3. Open the downloaded zip and extract models/smplx/SMPLX_*.npz to ./smplx, so that we have: PROJ_ROOT/data/models/smplx/SMPLX_NEUTRAL.npz
+
+You should now have
+- `data/models/smplx/SMPLX_NEUTRAL.npz`
+- `data/models/smplx/SMPLX_MALE.npz`
+- `data/models/smplx/SMPLX_FEMALE.npz`
 
 ## SMPL
 1. Please go to http://smpl.is.tue.mpg.de and register.

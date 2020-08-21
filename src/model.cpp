@@ -42,14 +42,15 @@ void Model<ModelConfig>::load(Gender gender) {
 template <class ModelConfig>
 void Model<ModelConfig>::load(const std::string& path,
                               const std::string& uv_path, Gender new_gender) {
-    gender = new_gender;
     if (!std::ifstream(path)) {
         std::cerr << "ERROR: Model '" << path
                   << "' does not exist, "
                      "did you download the model following instructions in "
-                     "data/models/README.md?\n";
-        std::exit(1);
+                     "https://github.com/sxyu/smplxpp/tree/master/data/models/"
+                     "README.md?\n";
+        return;
     }
+    gender = new_gender;
     cnpy::npz_t npz = cnpy::npz_load(path);
 
     // Load kintree

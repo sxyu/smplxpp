@@ -249,7 +249,7 @@ void declare_sequence(py::module& m, const std::string& py_sequence_name) {
     using SeqClass = Sequence<SequenceConfig>;
     auto cl =
         py::class_<SeqClass>(m, py_sequence_name.c_str())
-            .def(py::init<const std::string&>(), py::arg("amass_npz_path"))
+            .def(py::init<const std::string&>(), py::arg("amass_npz_path") = "")
             .def("load", &SeqClass::load, py::arg("amass_npz_path"))
 
             .def_property_readonly_static(
