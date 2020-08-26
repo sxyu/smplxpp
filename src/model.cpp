@@ -164,6 +164,11 @@ void Model<ModelConfig>::set_deformations(const Eigen::Ref<const Points>& d) {
     verts.noalias() = verts_load + d;
 }
 
+template <class ModelConfig>
+void Model<ModelConfig>::set_template(const Eigen::Ref<const Points>& t) {
+    verts.noalias() = t;
+}
+
 // Instantiations
 template class Model<model_config::SMPL>;
 template class Model<model_config::SMPLH>;

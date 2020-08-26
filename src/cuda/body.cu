@@ -171,9 +171,6 @@ SMPLX_HOST void Body<ModelConfig>::_cuda_update(
     cudaCheck(cudaMemcpyAsync(device.blendshape_params, h_blendshape_params,
                 model.n_blend_shapes() * sizeof(float),
                cudaMemcpyHostToDevice));
-    // cudaCheck(cudaMemcpyAsync(device.joint_transforms, h_joint_transforms,
-    //             model.n_joints() * 12 * sizeof(float),
-    //            cudaMemcpyHostToDevice));
     // Blend shapes
     if (enable_pose_blendshapes) {
         cudaMemcpyAsync(device.verts_shaped, model.device.verts,

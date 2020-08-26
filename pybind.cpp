@@ -39,8 +39,10 @@ void declare_model(py::module& m, const std::string& py_model_name,
              "Load npz model", py::arg("path"), py::arg("uv_path") = "",
              py::arg("gender") = Gender::unknown)
         .def("set_deformations", &ModelClass::set_deformations,
-             "Set deformations: verts := verts_init + deform",
+             "Set template deformations: verts := verts_init + deform",
              py::arg("deform") = Gender::unknown)
+        .def("set_template", &ModelClass::set_template,
+             "Set base template: verts := template")
         .def_property_readonly_static(
             "n_verts",
             [](const py::object& obj) { return ModelClass::n_verts(); },
@@ -173,6 +175,15 @@ void declare_model(py::module& m, const std::string& py_model_name,
             "Posed vertices, available after update() call (alias)")
         .def_property_readonly("joints", &BodyClass::joints,
                                "Posed joints, available after update() call")
+        .def_property_readonly("joint_transforms", &BodyClass::joint_transforms,
+                               "Joint transforms. Each row is a row-major "
+                               "(3,4) rigid body transform matrix, bottom row "
+                               "omitted. Available after update() call")
+        .def_property_readonly(
+            "vert_transforms", &BodyClass::vert_transforms,
+            "Vertex transforms. Each row is a row-major (3,4) "
+            "rigid body transform matrix, bottom row "
+            "omitted. Available after update() call")
         .def_property_readonly(
             "model",
             [](const BodyClass& obj) -> const ModelClass& { return obj.model; },

@@ -5,7 +5,6 @@
 #include "sdf/sdf.hpp"
 
 #include <iostream>
-#include <random>
 #include <cstddef>
 #include <cstdint>
 #include <cmath>
@@ -31,16 +30,11 @@ static int run(Gender gender, bool robust) {
     const float FLAT_CLOUD_STEP_Y = FLAT_CLOUD_RADIUS_Y * 2 / FLAT_CLOUD_DIM;
     Points _pts_flat(FLAT_CLOUD_DIM * FLAT_CLOUD_DIM, 3);
 
-    thread_local std::mt19937 rg{std::random_device{}()};
-    std::normal_distribution<float> gaussian(0.f, 1e-3f);
-
     for (int i = 0; i < FLAT_CLOUD_DIM; ++i) {
         float y = -FLAT_CLOUD_RADIUS_Y + FLAT_CLOUD_STEP_Y * i;
         for (int j = 0; j < FLAT_CLOUD_DIM; ++j) {
             float x = -FLAT_CLOUD_RADIUS_X + FLAT_CLOUD_STEP_X * j;
-            // Perturb points slightly so points are not exactly on grid
-            _pts_flat.row(i * FLAT_CLOUD_DIM + j) << x + gaussian(rg),
-                y + gaussian(rg), gaussian(rg);
+            _pts_flat.row(i * FLAT_CLOUD_DIM + j) << x, y, 0.f;
         }
     }
 

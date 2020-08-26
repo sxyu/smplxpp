@@ -70,6 +70,9 @@ class Model {
     // Set model deformations: verts := verts_load + d
     void set_deformations(const Eigen::Ref<const Points>& d);
 
+    // Set model template: verts := t
+    void set_template(const Eigen::Ref<const Points>& t);
+
     using Config = ModelConfig;
 
     /*** STATIC DATA SHAPE INFO SHORTHANDS,
@@ -259,6 +262,18 @@ class Body {
     // must call update() before this is available
     const Points& joints() const;
 
+    // Get homogeneous transforms at each joint. (n_joints, 12).
+    // Each row is a row-major (3, 4) rigid body transform matrix,
+    // canonical -> posed space.
+    const Eigen::Matrix<Scalar, Eigen::Dynamic, 12, Eigen::RowMajor>&
+    joint_transforms() const;
+
+    // Get homogeneous transforms at each vertex. (n_verts, 12).
+    // Each row is a row-major (3, 4) rigid body transform matrix,
+    // canonical -> posed space.
+    const Eigen::Matrix<Scalar, Eigen::Dynamic, 12, Eigen::RowMajor>&
+    vert_transforms() const;
+
     // Set parameters to zero
     inline void set_zero() { params.setZero(); }
 
@@ -287,6 +302,10 @@ class Body {
     // Homogeneous transforms at each joint (bottom row omitted)
     Eigen::Matrix<Scalar, Eigen::Dynamic, 12, Eigen::RowMajor>
         _joint_transforms;
+
+    // Homogeneous transforms at each vertex (bottom row omitted)
+    mutable Eigen::Matrix<Scalar, Eigen::Dynamic, 12, Eigen::RowMajor>
+        _vert_transforms;
 
     // Deformed joints (shape and pose applied)
     mutable Points _joints;

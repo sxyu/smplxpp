@@ -47,6 +47,21 @@ const Points& Body<ModelConfig>::joints() const {
     return _joints;
 }
 
+template <class ModelConfig>
+const Eigen::Matrix<Scalar, Eigen::Dynamic, 12, Eigen::RowMajor>&
+Body<ModelConfig>::joint_transforms() const {
+    return _joint_transforms;
+}
+
+template <class ModelConfig>
+const Eigen::Matrix<Scalar, Eigen::Dynamic, 12, Eigen::RowMajor>&
+Body<ModelConfig>::vert_transforms() const {
+    if (_vert_transforms.rows() == 0) {
+        _vert_transforms.noalias() = model.weights * _joint_transforms;
+    }
+    return _vert_transforms;
+}
+
 // Main LBS routine
 template <class ModelConfig>
 void Body<ModelConfig>::update(bool force_cpu, bool enable_pose_blendshapes) {
@@ -98,6 +113,7 @@ void Body<ModelConfig>::update(bool force_cpu, bool enable_pose_blendshapes) {
     if (!force_cpu) {
         _cuda_update(blendshape_params.data(), _joint_transforms.data(),
                      enable_pose_blendshapes);
+        _vert_transforms.resize(0, 12);
         return;
     }
 #endif
@@ -138,15 +154,15 @@ void Body<ModelConfig>::update(bool force_cpu, bool enable_pose_blendshapes) {
 
     // * LBS *
     // Construct a transform for each vertex
-    Eigen::Matrix<Scalar, Eigen::Dynamic, 12, Eigen::RowMajor> vert_transforms =
-        model.weights * _joint_transforms;
+    _vert_transforms.noalias() = model.weights * _joint_transforms;
     // _SMPLX_PROFILE(lbs weight computation);
 
     // Apply affine transform to each vertex and store to output
     // #pragma omp parallel for // Seems to only make it slower??
     for (size_t i = 0; i < model.n_verts(); ++i) {
-        TransformTransposedMap transform_tr(vert_transforms.row(i).data());
-        _verts.row(i) = _verts_shaped.row(i).homogeneous() * transform_tr;
+        TransformTransposedMap transform_tr(_vert_transforms.row(i).data());
+        _verts.row(i).noalias() =
+            _verts_shaped.row(i).homogeneous() * transform_tr;
     }
     // _SMPLX_PROFILE(lbs point transform);
 }
