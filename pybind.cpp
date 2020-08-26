@@ -236,6 +236,8 @@ void declare_model(py::module& m, const std::string& py_model_name,
              "the "
              "best "
              "distribution.")
+        .def("save_obj", &BodyClass::save_obj,
+             "Save a basic OBJ file from the posed model (call update first)")
         .def("__repr__", [](const BodyClass& obj) {
             return std::string("<smplxpp.Body(name=") + obj.model.name() +
                    ", gender=" + util::gender_to_str(obj.model.gender) +
