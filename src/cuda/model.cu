@@ -42,6 +42,11 @@ __host__ void Model<ModelConfig>::_cuda_load() {
     }
 }
 template<class ModelConfig>
+__host__ void Model<ModelConfig>::_cuda_copy_template() {
+    const size_t dsize = verts.size() * sizeof(verts.data()[0]);
+    cudaMemcpy(device.verts, verts.data(), dsize, cudaMemcpyHostToDevice);
+}
+template<class ModelConfig>
 __host__ void Model<ModelConfig>::_cuda_free() {
     if (device.verts) cudaFree(device.verts);
     if (device.blend_shapes) cudaFree(device.blend_shapes);

@@ -162,11 +162,17 @@ void Model<ModelConfig>::load(const std::string& path,
 template <class ModelConfig>
 void Model<ModelConfig>::set_deformations(const Eigen::Ref<const Points>& d) {
     verts.noalias() = verts_load + d;
+#ifdef SMPLX_CUDA_ENABLED
+    _cuda_copy_template();
+#endif
 }
 
 template <class ModelConfig>
 void Model<ModelConfig>::set_template(const Eigen::Ref<const Points>& t) {
     verts.noalias() = t;
+#ifdef SMPLX_CUDA_ENABLED
+    _cuda_copy_template();
+#endif
 }
 
 // Instantiations

@@ -192,6 +192,7 @@ class Model {
 
    private:
     void _cuda_load();
+    void _cuda_copy_template();
     void _cuda_free();
 #else
    private:
