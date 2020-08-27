@@ -154,14 +154,23 @@ void declare_model(py::module& m, const std::string& py_model_name,
                    ", has_uv=" + (obj.has_uv_map() ? "True" : "False") + ")>";
         });
     using TransRefType = Eigen::Ref<Eigen::Matrix<Scalar, 3, 1>>;
+    using TransConstRefType = Eigen::Ref<const Eigen::Matrix<Scalar, 3, 1>>;
     using PoseRefType = Eigen::Ref<
         Eigen::Matrix<Scalar, ModelConfig::n_explicit_joints() * 3, 1>>;
+    using PoseConstRefType = Eigen::Ref<
+        const Eigen::Matrix<Scalar, ModelConfig::n_explicit_joints() * 3, 1>>;
     using HandPCARefType =
         Eigen::Ref<Eigen::Matrix<Scalar, ModelConfig::n_hand_pca() * 2, 1>>;
+    using HandPCAConstRefType = Eigen::Ref<
+        const Eigen::Matrix<Scalar, ModelConfig::n_hand_pca() * 2, 1>>;
     using HandPCAHalfRefType =
         Eigen::Ref<Eigen::Matrix<Scalar, ModelConfig::n_hand_pca(), 1>>;
+    using HandPCAHalfConstRefType =
+        Eigen::Ref<const Eigen::Matrix<Scalar, ModelConfig::n_hand_pca(), 1>>;
     using ShapeRefType =
         Eigen::Ref<Eigen::Matrix<Scalar, ModelConfig::n_shape_blends(), 1>>;
+    using ShapeConstRefType = Eigen::Ref<
+        const Eigen::Matrix<Scalar, ModelConfig::n_shape_blends(), 1>>;
 
     py::class_<BodyClass>(m, py_body_name.c_str())
         .def(py::init<const ModelClass&, bool>(), py::arg("model"),
@@ -191,17 +200,21 @@ void declare_model(py::module& m, const std::string& py_model_name,
         .def_readwrite("params", &BodyClass::params, "Parameters vector")
         .def_property(
             "trans", [](BodyClass& obj) -> TransRefType { return obj.trans(); },
-            [](BodyClass& obj, const TransRefType& val) { obj.trans() = val; },
+            [](BodyClass& obj, const TransConstRefType& val) {
+                obj.trans() = val;
+            },
             "Translation part of parameters vector (3)")
         .def_property(
             "pose", [](BodyClass& obj) -> PoseRefType { return obj.pose(); },
-            [](BodyClass& obj, const PoseRefType& val) { obj.pose() = val; },
+            [](BodyClass& obj, const PoseConstRefType& val) {
+                obj.pose() = val;
+            },
             "Pose part of parameters vector (3 * n_explicit_joints) in "
             "axis-angle")
         .def_property(
             "hand_pca",
             [](BodyClass& obj) -> HandPCARefType { return obj.hand_pca(); },
-            [](BodyClass& obj, const HandPCARefType& val) {
+            [](BodyClass& obj, const HandPCAConstRefType& val) {
                 obj.hand_pca() = val;
             },
             "Hand PCA part of parameters vector, for both hands (2 * "
@@ -211,7 +224,7 @@ void declare_model(py::module& m, const std::string& py_model_name,
             [](BodyClass& obj) -> HandPCAHalfRefType {
                 return obj.hand_pca_l();
             },
-            [](BodyClass& obj, const HandPCAHalfRefType& val) {
+            [](BodyClass& obj, const HandPCAHalfConstRefType& val) {
                 obj.hand_pca_l() = val;
             },
             "Hand PCA part of parameters vector, left hand "
@@ -221,14 +234,16 @@ void declare_model(py::module& m, const std::string& py_model_name,
             [](BodyClass& obj) -> HandPCAHalfRefType {
                 return obj.hand_pca_r();
             },
-            [](BodyClass& obj, const HandPCAHalfRefType& val) {
+            [](BodyClass& obj, const HandPCAHalfConstRefType& val) {
                 obj.hand_pca_r() = val;
             },
             "Hand PCA part of parameters vector, right hand "
             "(n_hand_pca)")
         .def_property(
             "shape", [](BodyClass& obj) -> ShapeRefType { return obj.shape(); },
-            [](BodyClass& obj, const ShapeRefType& val) { obj.shape() = val; },
+            [](BodyClass& obj, const ShapeConstRefType& val) {
+                obj.shape() = val;
+            },
             "Shape part of parameters vector (n_shape_blends)")
         .def("set_zero", &BodyClass::set_zero, "Set all parameters to 0")
         .def("set_random", &BodyClass::set_random,
