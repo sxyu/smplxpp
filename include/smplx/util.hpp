@@ -133,7 +133,7 @@ inline void inv_affine(Eigen::Ref<Eigen::Matrix<T, 3, 4, Option>> a) {
 // Homogeneous transformation matrix in-place inverse
 template <class T, int Option = Eigen::ColMajor>
 inline void inv_homogeneous(Eigen::Ref<Eigen::Matrix<T, 3, 4, Option>> a) {
-    a.template leftCols<3>() = a.template leftCols<3>().inverse();
+    a.template leftCols<3>().transposeInPlace();
     a.template rightCols<1>() =
         -a.template leftCols<3>() * a.template rightCols<1>();
 }
