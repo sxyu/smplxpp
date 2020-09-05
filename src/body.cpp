@@ -125,24 +125,28 @@ void Body<ModelConfig>::update(bool force_cpu, bool enable_pose_blendshapes) {
             _verts_shaped.data(), model.n_verts() * 3);
         Eigen::Map<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>
             verts_init_flat(model.verts.data(), model.n_verts() * 3);
-        if (enable_pose_blendshapes) {
-            // HORRIBLY SLOW, like 95% of the time is spent here yikes
-            // Add shape and pose blend shapes
-            verts_shaped_flat.noalias() =
-                verts_init_flat + model.blend_shapes * blendshape_params;
-        } else {
-            // Add shape blend shapes
-            verts_shaped_flat.noalias() =
-                verts_init_flat +
-                model.blend_shapes
-                        .template leftCols<ModelConfig::n_shape_blends()>() *
-                    blendshape_params.head<ModelConfig::n_shape_blends()>();
-        }
+        // Add shape blend shapes
+        verts_shaped_flat.noalias() =
+            verts_init_flat +
+            model.blend_shapes
+                    .template leftCols<ModelConfig::n_shape_blends()>() *
+                blendshape_params.head<ModelConfig::n_shape_blends()>();
     }
     // _SMPLX_PROFILE(blendshape);
 
     // Apply joint regressor
     _joints_shaped = model.joint_reg * _verts_shaped;
+
+    if (enable_pose_blendshapes) {
+        // HORRIBLY SLOW, like 95% of the time is spent here yikes
+        // Add pose blend shapes
+        Eigen::Map<Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> verts_shaped_flat(
+            _verts_shaped.data(), model.n_verts() * 3);
+        verts_shaped_flat +=
+            model.blend_shapes
+                .template rightCols<ModelConfig::n_pose_blends()>() *
+            blendshape_params.tail<ModelConfig::n_pose_blends()>();
+    }
 
     // Inputs: trans(), _joints_shaped
     // Outputs: _joints

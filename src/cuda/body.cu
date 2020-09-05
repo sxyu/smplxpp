@@ -169,28 +169,29 @@ SMPLX_HOST void Body<ModelConfig>::_cuda_update(
 
     // Copy parameters to GPU
     cudaCheck(cudaMemcpyAsync(device.blendshape_params, h_blendshape_params,
-                model.n_blend_shapes() * sizeof(float),
+                ModelConfig::n_blend_shapes() * sizeof(float),
                cudaMemcpyHostToDevice));
-    // Blend shapes
-    if (enable_pose_blendshapes) {
-        cudaMemcpyAsync(device.verts_shaped, model.device.verts,
-                   model.n_verts() * 3 * sizeof(float), cudaMemcpyDeviceToDevice);
-        cuda_util::mmv_block<float, true>(model.device.blend_shapes,
-               device.blendshape_params, device.verts_shaped, model.n_verts() * 3,
-               model.n_blend_shapes());
-    } else {
-        cudaCheck(cudaMemcpyAsync(device.verts_shaped, model.device.verts,
-                   model.n_verts() * 3 * sizeof(float), cudaMemcpyDeviceToDevice));
-        cuda_util::mmv_block<float, true>(model.device.blend_shapes,
-                device.blendshape_params, device.verts_shaped, model.n_verts() * 3,
-                model.n_shape_blends());
-    }
+    // Shape blendshapes
+    cudaCheck(cudaMemcpyAsync(device.verts_shaped, model.device.verts,
+               model.n_verts() * 3 * sizeof(float), cudaMemcpyDeviceToDevice));
+    cuda_util::mmv_block<float, true>(model.device.blend_shapes,
+            device.blendshape_params, device.verts_shaped, ModelConfig::n_verts() * 3,
+            ModelConfig::n_shape_blends());
 
-    // Joint regressor TODO optimize sparse matrix multiplication, maybe use ELL format
+    // Joint regressor
+    // TODO: optimize sparse matrix multiplication, maybe use ELL format
     dim3 jr_blocks(3, model.n_joints());
     device::joint_regressor<<<1, jr_blocks>>>(
         device.verts_shaped, model.device.joint_reg.values, model.device.joint_reg.inner,
         model.device.joint_reg.outer, device.joints_shaped);
+
+    if (enable_pose_blendshapes) {
+        // Pose blendshapes.
+        // Note: this is the most expensive operation.
+        cuda_util::mmv_block<float, true>(model.device.blend_shapes + ModelConfig::n_shape_blends() * 3 * ModelConfig::n_verts(),
+               device.blendshape_params + ModelConfig::n_shape_blends(), device.verts_shaped, ModelConfig::n_verts() * 3,
+               ModelConfig::n_pose_blends());
+    }
 
     // Compute global joint transforms, this part can't be parallized and
     // is horribly slow on GPU; we do it on CPU instead

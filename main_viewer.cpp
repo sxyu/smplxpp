@@ -28,21 +28,22 @@ static int run(Gender gender, bool force_cpu, bool pose_blends) {
     meshview::Viewer viewer;
     viewer.draw_axes = false;  // Press a to see axes
 
-    meshview::Image image(256, 3 * 256);
-    for (size_t r = 0; r < image.rows(); ++r) {
-        for (size_t c = 0; c < image.cols() / 3; ++c) {
-            auto rgb = image.block<1, 3>(r, c * 3);
-            rgb.x() = (float)r / image.rows();
-            rgb.y() = (float)c / image.cols();
-            rgb.z() = 0.5;
-        }
-    }
-
     // Main body model
-    auto& smpl_mesh = viewer.add_mesh(body.verts(), model.faces)
-                          .translate(Eigen::Vector3f(0.f, 0.f, 0.f))
-                          .set_tex_coords(model.uv, model.uv_faces)
-                          .add_texture(image, 3);
+    auto& smpl_mesh =
+        viewer.add_mesh(body.verts(), model.faces, 0.9f, 0.6f, 0.8f)
+            .translate(Eigen::Vector3f(0.f, 0.f, 0.f));
+    // Texture example
+    // meshview::Image image(256, 3 * 256);
+    // for (size_t r = 0; r < image.rows(); ++r) {
+    //     for (size_t c = 0; c < image.cols() / 3; ++c) {
+    //         auto rgb = image.block<1, 3>(r, c * 3);
+    //         rgb.x() = (float)r / image.rows();
+    //         rgb.y() = (float)c / image.cols();
+    //         rgb.z() = 0.5;
+    //     }
+    // }
+    // smpl_mesh.set_tex_coords(model.uv, model.uv_faces)
+    //   .add_texture(image, 3);
 
     // LBS weights color visualization
     auto& smpl_mesh_lbs =
