@@ -151,10 +151,21 @@ __host__ void Body<ModelConfig>::_cuda_free() {
 template<class ModelConfig>
 __host__ void Body<ModelConfig>::_cuda_maybe_retrieve_verts() const {
     if (!_verts_retrieved) {
-        _verts.resize(model.verts.rows(), 3);
+        _verts.resize(model.n_verts(), 3);
         cudaMemcpy(_verts.data(), device.verts, _verts.size() * sizeof(float),
                    cudaMemcpyDeviceToHost);
         _verts_retrieved = true;
+    }
+}
+
+template<class ModelConfig>
+__host__ void Body<ModelConfig>::_cuda_maybe_retrieve_verts_shaped() const {
+    if (!_verts_shaped_retrieved) {
+        _verts_shaped.resize(model.n_verts(), 3);
+        cudaMemcpy(_verts_shaped.data(), device.verts_shaped,
+                    _verts_shaped.size() * sizeof(float),
+                   cudaMemcpyDeviceToHost);
+        _verts_shaped_retrieved = true;
     }
 }
 
@@ -166,6 +177,7 @@ SMPLX_HOST void Body<ModelConfig>::_cuda_update(
         bool enable_pose_blendshapes) {
     // Verts will be updated
     _verts_retrieved = false;
+    _verts_shaped_retrieved = false;
 
     // Copy parameters to GPU
     cudaCheck(cudaMemcpyAsync(device.blendshape_params, h_blendshape_params,

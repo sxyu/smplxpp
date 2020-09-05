@@ -42,8 +42,7 @@ class CMakeBuild(build_ext):
 
         cmake_args = [
             '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-            '-DPYTHON_EXECUTABLE=' + sys.executable,
-            '-DSMPLX_BUILD_PYTHON=ON',
+            '-DPYTHON_EXECUTABLE=' + sys.executable, '-DSMPLX_BUILD_PYTHON=ON',
             '-DSMPLX_BUILD_VIEWER=OFF'
         ]
 
@@ -78,7 +77,7 @@ class CMakeBuild(build_ext):
 
 setup(
     name='smplxpp',
-    version='0.0.1',
+    version='0.0.2',
     author='Alex Yu',
     author_email='alexyu99126@gmail.com',
     description='SMPLXpp: Implementation of SMPL, SMPL+H, SMPL-X',

@@ -42,6 +42,15 @@ const Points& Body<ModelConfig>::verts() const {
 #endif
     return _verts;
 }
+
+template <class ModelConfig>
+const Points& Body<ModelConfig>::verts_shaped() const {
+#ifdef SMPLX_CUDA_ENABLED
+    if (_last_update_used_gpu) _cuda_maybe_retrieve_verts_shaped();
+#endif
+    return _verts_shaped;
+}
+
 template <class ModelConfig>
 const Points& Body<ModelConfig>::joints() const {
     return _joints;

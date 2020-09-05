@@ -182,6 +182,13 @@ void declare_model(py::module& m, const std::string& py_model_name,
         .def_property_readonly(
             "vertices", &BodyClass::verts,
             "Posed vertices, available after update() call (alias)")
+        .def_property_readonly(
+            "verts_shaped", &BodyClass::verts_shaped,
+            "Shaped but not posed vertices, including pose+shape blendshapes + "
+            "deformed template  available after update() call")
+        .def_property_readonly("vertices_shaped", &BodyClass::verts_shaped,
+                               "Shaped but not posed vertices, available after "
+                               "update() call (alias)")
         .def_property_readonly("joints", &BodyClass::joints,
                                "Posed joints, available after update() call")
         .def_property_readonly("joint_transforms", &BodyClass::joint_transforms,
@@ -245,6 +252,12 @@ void declare_model(py::module& m, const std::string& py_model_name,
                 obj.shape() = val;
             },
             "Shape part of parameters vector (n_shape_blends)")
+        .def_property(
+            "betas", [](BodyClass& obj) -> ShapeRefType { return obj.shape(); },
+            [](BodyClass& obj, const ShapeConstRefType& val) {
+                obj.shape() = val;
+            },
+            "Shape part of parameters vector (n_shape_blends) alias of shape")
         .def("set_zero", &BodyClass::set_zero, "Set all parameters to 0")
         .def("set_random", &BodyClass::set_random,
              "Set all parameters u.a.r. in  [-0.25, 0.25]. Maybe not "
