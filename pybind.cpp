@@ -352,6 +352,22 @@ void declare_sequence(py::module& m, const std::string& py_sequence_name) {
     declare_sequence_model_spec<SequenceConfig, model_config::SMPLX>(cl);
     declare_sequence_model_spec<SequenceConfig, model_config::SMPLXpca>(cl);
 }
+
+void batch_inv_affine(
+    Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, 12, Eigen::RowMajor>> bat) {
+    for (Eigen::Index i = 0; i < bat.rows(); ++i)
+        util::inv_affine<float, Eigen::RowMajor>(
+            Eigen::template Map<Eigen::Matrix<float, 3, 4, Eigen::RowMajor>>(
+                bat.row(i).data()));
+}
+
+void batch_inv_homogeneous(
+    Eigen::Ref<Eigen::Matrix<float, Eigen::Dynamic, 12, Eigen::RowMajor>> bat) {
+    for (Eigen::Index i = 0; i < bat.rows(); ++i)
+        util::inv_homogeneous<float, Eigen::RowMajor>(
+            Eigen::template Map<Eigen::Matrix<float, 3, 4, Eigen::RowMajor>>(
+                bat.row(i).data()));
+}
 }  // namespace
 
 PYBIND11_MODULE(smplxpp, m) {
@@ -380,9 +396,17 @@ PYBIND11_MODULE(smplxpp, m) {
              "Affine transform composition with bottom row omitted:"
              " a (3,4) x b (3,4) -> b in-place")
         .def("inv_affine", &util::inv_affine<float, Eigen::RowMajor>,
-             "Affine transform in-place inversion")
+             "Affine transform in-place inversion. Input (3,4)")
         .def("inv_homogeneous", &util::inv_homogeneous<float, Eigen::RowMajor>,
-             "Rigid-body transform in-place inversion")
+             "Rigid-body transform in-place inversion. Input (3,4)")
+        .def("batch_inv_affine", &batch_inv_affine,
+             "Affine transform in-place inversion in a batch. Input (n, 12) "
+             "(each row is "
+             "3x4 row-major)")
+        .def("batch_inv_homogeneous", &batch_inv_homogeneous,
+             "Rigid-body transform in-place inversion in a batch. Input (n, "
+             "12) (each row is "
+             "3x4 row-major)")
         .def("gender_to_str", &util::gender_to_str, "Gender enum to string")
         .def("parse_gender", &util::parse_gender, "Gender enum from string");
 }
