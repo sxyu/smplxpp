@@ -2,6 +2,8 @@
 // 2 optional arguments:
 // 1. model type, default H
 //    options: S H X (SMPL SMPL-H SMPL-X)
+//    additional: Xp (SMPLX with hand PCA) Z (SMPLX old v1.0) Zp (SMPLX v1.0
+//    PCA)
 // 2. sequence (AMASS .npz) path. If not specified,
 //    opens a blank viewer with option to browse and load a npz
 #include <Eigen/Geometry>
@@ -206,11 +208,19 @@ static int run(std::string path) {
 
 int main(int argc, char** argv) {
     std::string path = argc > 2 ? argv[2] : "";
-    if (argc < 2 || std::toupper(argv[1][0]) == 'H') {
-        return run<model_config::SMPLH>(path);
-    } else if (std::toupper(argv[1][0]) == 'S') {
+    std::string model_name = argv[1];
+    for (auto& c : model_name) c = std::toupper(c);
+    if (argc < 2 || model_name == "S") {
         return run<model_config::SMPL>(path);
-    } else if (std::toupper(argv[1][0]) == 'X') {
+    } else if (model_name == "H") {
+        return run<model_config::SMPLH>(path);
+    } else if (model_name == "X") {
         return run<model_config::SMPLX>(path);
+    } else if (model_name == "Z") {
+        return run<model_config::SMPLX_v1>(path);
+    } else if (model_name == "Xp") {
+        return run<model_config::SMPLXpca>(path);
+    } else if (model_name == "Zp") {
+        return run<model_config::SMPLXpca_v1>(path);
     }
 }

@@ -1,7 +1,9 @@
 // Renders SMPL-X model in a OpenGL 3D viewer
 // 4 optional arguments:
 // 1. model type, default S
-//    options: S H X P (SMPL; SMPL-H; SMPL-X; SMPL-X with pca)
+//    options: S H X (SMPL SMPL-H SMPL-X)
+//    additional: Xp (SMPLX with hand PCA) Z (SMPLX old v1.0) Zp (SMPLX v1.0
+//    PCA)
 // 2. model gender, default NEUTRAL
 //    options: NEUTRAL MALE FEMALE (case insensitive)
 // 3. cpu or gpu. default gpu (i.e. use gpu where available)
@@ -255,13 +257,19 @@ int main(int argc, char** argv) {
     Gender gender = util::parse_gender(argc > 2 ? argv[2] : "NEUTRAL");
     bool force_cpu = argc > 3 ? (std::string(argv[3]) == "cpu") : false;
     bool pose_blends = argc > 4 ? (std::string(argv[4]) != "off") : true;
-    if (argc < 2 || std::toupper(argv[1][0]) == 'S') {
+    std::string model_name = argv[1];
+    for (auto& c : model_name) c = std::toupper(c);
+    if (argc < 2 || model_name == "S") {
         return run<model_config::SMPL>(gender, force_cpu, pose_blends);
-    } else if (std::toupper(argv[1][0]) == 'H') {
+    } else if (model_name == "H") {
         return run<model_config::SMPLH>(gender, force_cpu, pose_blends);
-    } else if (std::toupper(argv[1][0]) == 'X') {
+    } else if (model_name == "X") {
         return run<model_config::SMPLX>(gender, force_cpu, pose_blends);
-    } else if (std::toupper(argv[1][0]) == 'P') {
+    } else if (model_name == "Z") {
+        return run<model_config::SMPLX_v1>(gender, force_cpu, pose_blends);
+    } else if (model_name == "Xp") {
         return run<model_config::SMPLXpca>(gender, force_cpu, pose_blends);
+    } else if (model_name == "Zp") {
+        return run<model_config::SMPLXpca_v1>(gender, force_cpu, pose_blends);
     }
 }

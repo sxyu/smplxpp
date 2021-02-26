@@ -241,5 +241,7 @@ template class Body<model_config::SMPL>;
 template class Body<model_config::SMPLH>;
 template class Body<model_config::SMPLX>;
 template class Body<model_config::SMPLXpca>;
+template class Body<model_config::SMPLX_v1>;
+template class Body<model_config::SMPLXpca_v1>;
 
 }  // namespace smplx

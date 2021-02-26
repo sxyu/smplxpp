@@ -68,5 +68,7 @@ template class Model<model_config::SMPL>;
 template class Model<model_config::SMPLH>;
 template class Model<model_config::SMPLX>;
 template class Model<model_config::SMPLXpca>;
+template class Model<model_config::SMPLX_v1>;
+template class Model<model_config::SMPLXpca_v1>;
 
 }  // namespace smplx

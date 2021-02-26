@@ -266,15 +266,25 @@ static int run(Gender gender, bool robust) {
 }
 
 int main(int argc, char** argv) {
+    if (argc < 2) {
+        std::cerr << "Please enter model type S/H/X/Z/Xp/Zp\n";
+    }
     Gender gender = util::parse_gender(argc > 2 ? argv[2] : "NEUTRAL");
     bool robust = argc > 3 ? (std::string(argv[3]) != "no") : true;
-    if (argc < 2 || std::toupper(argv[1][0]) == 'S') {
+
+    std::string model_name = argv[1];
+    for (auto& c : model_name) c = std::toupper(c);
+    if (argc < 2 || model_name == "S") {
         return run<model_config::SMPL>(gender, robust);
-    } else if (std::toupper(argv[1][0]) == 'H') {
+    } else if (model_name == "H") {
         return run<model_config::SMPLH>(gender, robust);
-    } else if (std::toupper(argv[1][0]) == 'X') {
+    } else if (model_name == "X") {
         return run<model_config::SMPLX>(gender, robust);
-    } else if (std::toupper(argv[1][0]) == 'P') {
+    } else if (model_name == "Z") {
+        return run<model_config::SMPLX_v1>(gender, robust);
+    } else if (model_name == "Xp") {
         return run<model_config::SMPLXpca>(gender, robust);
+    } else if (model_name == "Zp") {
+        return run<model_config::SMPLXpca_v1>(gender, robust);
     }
 }

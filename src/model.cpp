@@ -180,15 +180,7 @@ template class Model<model_config::SMPL>;
 template class Model<model_config::SMPLH>;
 template class Model<model_config::SMPLX>;
 template class Model<model_config::SMPLXpca>;
-
-// Model config constexpr arrays
-namespace model_config {
-constexpr size_t SMPLX::parent[];
-constexpr size_t SMPLH::parent[];
-constexpr size_t SMPL::parent[];
-constexpr const char* SMPLX::joint_name[];
-constexpr const char* SMPLH::joint_name[];
-constexpr const char* SMPL::joint_name[];
-}  // namespace model_config
+template class Model<model_config::SMPLX_v1>;
+template class Model<model_config::SMPLXpca_v1>;
 
 }  // namespace smplx
