@@ -12,13 +12,17 @@ You should now have
 1. Please go to http://smpl.is.tue.mpg.de and register.
 2. In Downloads, download the 'for Python users' zip.
 3. Unzip to project root, so that there is a folder `smpl` on the same level as CMakeLists.txt
-4. `cd` to the project root directory and run `python tools/smpl2npz.py smpl/models/basicModel_f_lbs_10_207_0_v1.0.0.pkl smpl/models/basicmodel_m_lbs_10_207_0_v1.0.0.pkl`
+4. `cd` to the project root directory and run
+ (for SMPL 1.0) `python tools/smpl2npz.py smpl/models/basicModel_f_lbs_10_207_0_v1.0.0.pkl smpl/models/basicmodel_m_lbs_10_207_0_v1.0.0.pkl` or
+ (for SMPL 1.1) `python tools/smpl2npz.py smpl/models/basicModel_f_lbs_10_207_0_v1.1.0.pkl smpl/models/basicmodel_m_lbs_10_207_0_v1.1.0.pkl smpl/models/basicmodel_neutral_lbs_10_207_0_v1.1.0.pkl`
 
 You should have
 - `data/models/smpl/SMPL_MALE.npz`
 - `data/models/smpl/SMPL_FEMALE.npz`
 
 ### Neutral
+NOTE: as of SMPL 1.1, the neutral model is included in the SMPL release, and this is no longer needed
+
 1. Please go to http://smplify.is.tue.mpg.de and register.
 2. Download the zip under 'Code and model'.
 3. Unzip to project root, so that there is a folder `smplify_public` on the same level as CMakeLists.txt
