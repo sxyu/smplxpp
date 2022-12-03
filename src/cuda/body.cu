@@ -224,6 +224,7 @@ SMPLX_HOST void Body<ModelConfig>::_cuda_update(
 
 // Instantiation
 template class Body<model_config::SMPL>;
+template class Body<model_config::SMPL_v1>;
 template class Body<model_config::SMPLH>;
 template class Body<model_config::SMPLX>;
 template class Body<model_config::SMPLXpca>;

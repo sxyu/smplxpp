@@ -238,6 +238,7 @@ void Body<ModelConfig>::save_obj(const std::string& path) const {
 
 // Instantiation
 template class Body<model_config::SMPL>;
+template class Body<model_config::SMPL_v1>;
 template class Body<model_config::SMPLH>;
 template class Body<model_config::SMPLX>;
 template class Body<model_config::SMPLXpca>;

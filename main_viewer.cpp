@@ -261,6 +261,8 @@ int main(int argc, char** argv) {
     for (auto& c : model_name) c = std::toupper(c);
     if (argc < 2 || model_name == "S") {
         return run<model_config::SMPL>(gender, force_cpu, pose_blends);
+    } else if (model_name == "S1") {
+        return run<model_config::SMPL_v1>(gender, force_cpu, pose_blends);
     } else if (model_name == "H") {
         return run<model_config::SMPLH>(gender, force_cpu, pose_blends);
     } else if (model_name == "X") {

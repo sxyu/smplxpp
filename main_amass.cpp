@@ -212,6 +212,8 @@ int main(int argc, char** argv) {
     for (auto& c : model_name) c = std::toupper(c);
     if (argc < 2 || model_name == "S") {
         return run<model_config::SMPL>(path);
+    } else if (model_name == "S1") {
+        return run<model_config::SMPL_v1>(path);
     } else if (model_name == "H") {
         return run<model_config::SMPLH>(path);
     } else if (model_name == "X") {

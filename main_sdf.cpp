@@ -276,6 +276,8 @@ int main(int argc, char** argv) {
     for (auto& c : model_name) c = std::toupper(c);
     if (argc < 2 || model_name == "S") {
         return run<model_config::SMPL>(gender, robust);
+    } else if (model_name == "S1") {
+        return run<model_config::SMPL1>(gender, robust);
     } else if (model_name == "H") {
         return run<model_config::SMPLH>(gender, robust);
     } else if (model_name == "X") {

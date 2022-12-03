@@ -60,8 +60,9 @@ tm.show()
    Shows an interactive 3D viewer, including parameter controls
     - Usage: `./smplx-viewer model gender device poseblends where
         - All arguments are position and optional
-        - model may be S/H/X/Xp, where S means SMPL, H means SMPL+H, X means SMPL-X (with hand joints), and Xp means SMPL-X (with hand PCA). Default is S
+        - model may be S/S1/H/X/Z/Xp/Zp (sorry about the mess here), where S means SMPL, H means SMPL+H, X means SMPL-X (with hand joints), and Xp means SMPL-X (with hand PCA). Default is S
             - New: X/Xp now specify SMPL-X v1.1 by default. Use Z/Zp for v1.0
+            - New: S now specify SMPL v1.1 by default. Use S1 for v1.0
         - gender may be NEUTRAL/MALE/FEMALE; NEUTRAL is default (case insensitive)
         - device may be gpu/cpu; gpu is default and will fallback to cpu automatically
         - poseblends may be on/off, default on; off turns off pose blendshapes, which

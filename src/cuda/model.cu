@@ -65,6 +65,7 @@ __host__ void Model<ModelConfig>::_cuda_free() {
 
 // Instantiation
 template class Model<model_config::SMPL>;
+template class Model<model_config::SMPL_v1>;
 template class Model<model_config::SMPLH>;
 template class Model<model_config::SMPLX>;
 template class Model<model_config::SMPLXpca>;
