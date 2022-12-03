@@ -11,6 +11,7 @@
 //    note pose blendshapes are very slow.
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 
 #include "meshview/meshview.hpp"
 #include "meshview/meshview_imgui.hpp"
@@ -125,6 +126,23 @@ static int run(Gender gender, bool force_cpu, bool pose_blends) {
         if (ImGui::Button("Shape##ResetShape")) {
             body.shape().setZero();
             update();
+        }
+
+        if (ImGui::Button("Save OBJ")) {
+            auto verts = body.verts();
+            auto faces = model.faces;
+
+            // Write obj
+            puts("Writing body.obj");
+            std::ofstream out("body.obj");
+            for (size_t i = 0; i < verts.rows(); ++i) {
+                out << "v " << verts(i, 0) << " " << verts(i, 1) << " "
+                    << verts(i, 2) << std::endl;
+            }
+            for (size_t i = 0; i < faces.rows(); ++i) {
+                out << "f " << faces(i, 0) + 1 << " " << faces(i, 1) + 1 << " "
+                    << faces(i, 2) + 1 << std::endl;
+            }
         }
 
         if (ImGui::SliderFloat3("translation", body.trans().data(), -5.f, 5.f))
