@@ -254,6 +254,10 @@ static int run(Gender gender, bool force_cpu, bool pose_blends) {
 }
 
 int main(int argc, char** argv) {
+    if (argc == 1) {
+        puts("Usage: ./smpl_viewer [S|H|X|Xp|Z|Zp|S1] [NEUTRAL|MALE|FEMALE]");
+        return 0;
+    }
     Gender gender = util::parse_gender(argc > 2 ? argv[2] : "NEUTRAL");
     bool force_cpu = argc > 3 ? (std::string(argv[3]) == "cpu") : false;
     bool pose_blends = argc > 4 ? (std::string(argv[4]) != "off") : true;
